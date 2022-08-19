@@ -1,4 +1,3 @@
-
 ###########################################################################################
 # Script: Create community matrices
 # AFE
@@ -23,15 +22,15 @@ load(paste0(myd, "/tax.RData"))   # List of species names & taxonomic updates
 
 ###########################################################################################
 # 1) Create Historical & Contemporary Comm Matrices:---------------------------------------
-dim(NDT53)
-str(NDT53)
+dim(NDT67)
+str(NDT67)
 
 tax$Final <- ifelse(is.na(tax$Update1), tax$Genus_species, tax$Update1)
 
-create_long_df53 <- function(variable=NULL){
+create_long_df67 <- function(variable=NULL){
   
   # The metadata includes locality and drainage basin info:
-  metadata <- NDT53[,c("SiteNameE", "DrainageBasinE")]  
+  metadata <- NDT67[,c("SiteNameE", "DrainageBasinE")]  
   
   # Elements listed in the variable column get split:
   varI <- data.frame(do.call(rbind, strsplit(variable, ","))) # Will display a warning but this is fixed in the subsequent line
@@ -45,43 +44,47 @@ create_long_df53 <- function(variable=NULL){
   return(df)
 } 
 
-varlist53 <- list(NDT53$HistoricalNatCatalog, NDT53$HistoricalNatBroad, NDT53$HistoricalExotics, NDT53$NativeFound2005, NDT53$ExoticsFound2005)
-dflist53  <- lapply(varlist53, create_long_df53)
-dflist53  <- lapply(dflist53, function(x) {x$Species <- tax$Final[match(x$Species, tax$Short)];x # Updated names
+varlist67 <- list(NDT67$HistoricalNatCatalog, NDT67$HistoricalNatBroad, NDT67$HistoricalExotics, NDT67$NativeFound2005, NDT67$ExoticsFound2005)
+dflist67  <- lapply(varlist67, create_long_df67)
+dflist67  <- lapply(dflist67, function(x) {x$Species <- tax$Final[match(x$Species, tax$Short)];x # Updated names
                                            x$Species <- gsub(" cf ", " ", x$Species); x          # Remove " cf " so that e.g. Poecilia cf butleri and Poecilia butleri are regarded as the same sps
                                            x$Abundance <- rep(1, nrow(x));x})                    # Create long data.frame
 
-dflist53 <- lapply(dflist53, function(x) {x <- x %>% distinct()})
-dflist53 <- lapply(dflist53, function(x) {x <- spread(x, key="Species", value="Abundance", fill=0)})
+dflist67 <- lapply(dflist67, function(x) {x <- x %>% distinct()})
+dflist67 <- lapply(dflist67, function(x) {x <- spread(x, key="Species", value="Abundance", fill=0)})
 
 
 # Correct occurrences of A monticola and remove cols that indicate presence of no fish:----
-HNC <- dflist53[[1]]    # Historical Catalog Natives
-HNB <- dflist53[[2]]    # Historical Broad Natives
-HE <- dflist53[[3]]     # Historical Exotics
-ContN <- dflist53[[4]]  # Contemporary native
-ContE <- dflist53[[5]]  # Contemporary exotics
+HNC <- dflist67[[1]]    # Historical Catalog Natives
+HNB <- dflist67[[2]]    # Historical Broad Natives
+HE <- dflist67[[3]]     # Historical Exotics
+ContN <- dflist67[[4]]  # Contemporary native
+ContE <- dflist67[[5]]  # Contemporary exotics
 
 
 # Historical Catalog (Natives only):
 HNC$SiteName[HNC$`A monticola`==1]
-# "De Comala River"/"El Huizcolote River"
+# "De Comala River"/"El Huizcolote River"/"El Sacristan Spring"
 
 names(HNC)[names(HNC)=="A monticola"] <- "Agonostomus monticola"
 HNC$`Agonostomus monticola`[HNC$SiteName=="El Huizcolote River"] <- 0
+HNC$`Agonostomus monticola`[HNC$SiteName=="El Sacristan Spring"] <- 0
 
 HNC$`Algansea monticola` <- rep(0, nrow(HNC))
 HNC$`Algansea monticola`[HNC$SiteName=="El Huizcolote River"] <- 1
+HNC$`Algansea monticola`[HNC$SiteName=="El Sacristan Spring"] <- 1
 
 # Historical Broad (Natives only):
 HNB$SiteName[HNB$`A monticola`==1]
-# "De Comala River"/"El Huizcolote River"/"Salado River"       
+# "De Comala River"/"El Huizcolote River"/"El Sacristan Spring"/"Salado River"       
 
 names(HNB)[names(HNB)=="A monticola"] <- "Agonostomus monticola"
 HNB$`Agonostomus monticola`[HNB$SiteName=="El Huizcolote River"] <- 0
+HNB$`Agonostomus monticola`[HNB$SiteName=="El Sacristan Spring"] <- 0
 
 HNB$`Algansea monticola` <- rep(0, nrow(HNB))
 HNB$`Algansea monticola`[HNB$SiteName=="El Huizcolote River"] <- 1
+HNB$`Algansea monticola`[HNB$SiteName=="El Sacristan Spring"] <- 1
 
 # Contemporary native:
 ContN$SiteName[ContN$`A monticola`==1]
@@ -99,7 +102,7 @@ save(HNC, file=paste0(myd, "/HNC.RData"))
 save(HNB, file=paste0(myd, "/HNB.RData"))
 save(HE, file=paste0(myd, "/HE.RData"))
 save(ContN, file=paste0(myd, "/ContN.RData"))
-save(ContE, file=paste0(myd, "/ContE.RData"))
+save(ContE, file=paste0(myd, "/ContE.RData")) # Considering all 67 sites.
 
 
 # 2) Taxonomic updates in species names: -------------------------------------------------
@@ -115,10 +118,11 @@ taxonomicUpdate2 <- function (df=NULL) {
 listData <- lapply(listData, taxonomicUpdate2)  # Warnings are fine: sps in the list not present in each comm data
 
 # Check that records of C. jordani include both (C. jordani & C. mezquital):
-NDT53$SiteNameE[NDT53$HistoricalNatBroad %like% "mezquital"] #2
-NDT53$SiteNameE[NDT53$HistoricalNatBroad %like% "jordani"]   #8
+NDT67$SiteNameE[NDT67$HistoricalNatBroad %like% "mezquital"] #2
+NDT67$SiteNameE[NDT67$HistoricalNatBroad %like% "jordani"]   #13
 
-sum(HNB$`Chirostoma jordani`==1) # 10 = 8 + 2, OK
+sum(HNB$`Chirostoma jordani`==1) # 15= 13 + 2, OK
+
 
 ###########################################################################################
 # End of script ###########################################################################
