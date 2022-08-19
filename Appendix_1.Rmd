@@ -1,0 +1,365 @@
+---
+title: "Appendix 1"
+author: "Eslava, Ada"
+date: "March 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+<style>
+body {
+text-align: justify}
+</style>
+
+###**Description:**
+
+This Appendix contains the code to:
+1) Generate maps of the surveyed sites 
+2) Generate extirpations vs introductions spatial map
+3) Explore features of the data
+4) Calculate the area of each basin that contains more than 3 sites
+5) Compute the species' accumulation curves & estimated gamma diversity
+
+<p>&nbsp;</p>
+
+
+#### **Libraries:**
+```{r, echo = TRUE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)  
+library(rworldmap)  
+library(vegan)
+library(kableExtra)
+library(gridExtra)
+library(rgeos)
+library(scales)
+library(GeoRange)
+library(hablar)
+```
+<p>&nbsp;</p>
+#### **Read data: **
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+myd <- getwd()
+
+load(paste0(myd, "/A_DataObjects/HNC.RData"))     # Survey data (historical catalog)
+load(paste0(myd, "/A_DataObjects/HNB.RData"))     # Survey data (historical broad)
+load(paste0(myd, "/A_DataObjects/ContNE.RData"))  # Survey data (Contemporary assemblage)
+
+load(paste0(myd, "/A_DataObjects/NDT53.RData"))   # Survey data (53)
+load(paste0(myd, "/A_DataObjects/NDT67.RData"))   # Survey data (67)
+```
+<p>&nbsp;</p>
+
+#### **Site Types: **
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+length(unique(NDT67$SiteType)) # 13
+NDT67 %>% group_by(SiteType) %>% summarise(n())
+```
+<p>&nbsp;</p>
+#### **Surveyed area: **
+Retrieve area covered in KM2:
+```{r, echo=TRUE}
+# Coordinates:
+points67 <- SpatialPoints(cbind(NDT67$Longitude,NDT67$Latitude)) # You can also check the subset with 53 sites
+pointsKM267 <- SpatialPoints(cbind(NDT67$Longitude,NDT67$Latitude), proj4string=CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')) %>% sp::spTransform(., CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=km +no_defs"))
+
+convhull67 <-gConvexHull(points67)
+convhullKM267 <-gConvexHull(pointsKM267)
+gArea(convhullKM267) # 314190.4
+
+# Check with GeoRange:
+NDT67$Pairs <- paste0(NDT67$Longitude, " ", NDT67$Latitude)
+pairs <- unique(NDT67$Pairs)
+pairsLong <- as.numeric(str_split_fixed(pairs, " ", 2)[,1])
+pairsLat <- as.numeric(str_split_fixed(pairs, " ", 2)[,2])
+CHullAreaEarth(pairsLong, pairsLat) #OK, around 273190
+
+# Map area:
+centroid67 <-gCentroid(convhull67)    
+centroid67@coords
+
+plot(points67,cex=0.5,axes=F,pch=19)
+axis(side=2,las=1,cex.axis=0.8, tck=-.01,line=-0.2)
+axis(side=1,tck=-.01,labels=NA) ##1st just add the line
+axis(side=1,lwd = 0, line = -0.6,cex.axis=.8, labels=T)   
+plot(convhull67,add=T)
+```
+<p>&nbsp;</p>
+#### **Area of basins: **
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+basins <- split(NDT67, f=NDT67$DrainageBasinE)
+basins_pointsKm2 <- lapply(basins, function(x) {SpatialPoints(cbind(x$Longitude,x$Latitude), proj4string=CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')) %>% sp::spTransform(., CRS("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=km +no_defs"))})
+basins_areaKm2 <- as.data.frame(do.call(rbind, lapply(basins_pointsKm2, function(x) {gArea(gConvexHull(x))})))
+names(basins_areaKm2) <- "areakm2"
+
+# Remove those basins with 1 or 2 sites only.
+round(basins_areaKm2, 0) %>%
+  filter(areakm2>0) %>% # Basins with one or two sites only
+  kbl() %>%
+  kable_styling() # 9 basins
+```
+<p>&nbsp;</p>
+#### **Retrieve other information: **
+These data contains all sites. Sites that could not be included in analyses are kept in this subset.
+
+```{r, echo=TRUE, results=FALSE, message=FALSE, warning=FALSE}
+length(unique(NDT67$DrainageBasinE))                             # 19 basins
+n <- NDT67 %>% group_by(DrainageBasinE) %>% summarise(count=n()) # 1 to 10 sites/basin
+nn <- n %>% group_by(count) %>% summarise(countII=n())           # 9 basins with more than 3 sites.
+
+NDT67$CountNat2005 <- gsub("-",0, NDT67$CountNat2005)
+NDT67$CountNonNat2005 <- gsub("-",0, NDT67$CountNonNat2005)
+NDT67 <- NDT67 %>% retype()
+
+range(NDT67$CountHistNatCatalog, na.rm=TRUE)                     # 1 to 17
+range(NDT67$CountHistNatBroad, na.rm=TRUE)                       # 1 to 17
+
+sort(unique(NDT67$HistoricalExotics, na.rm=TRUE))                # 4 species reported as exotics in the historical period
+range(NDT67$CountNat2005, na.rm=TRUE)                            # 0 to 9
+range(NDT67$CountNonNat2005)                                     # 0 to 6
+
+sum(NDT67$CountNat2005==0)                                       # 21
+sum(NDT67$CountNonNat2005==0)                                    # 30
+sum(NDT67$`RatioFound/Expected`==1)                              # 13 (preserved native assemblage)
+sum(NDT67$`RatioFound/Expected`[NDT67$CountNonNat2005==0]==1)    # 7 (preserved native + no nonative)
+
+
+sort(unique(NDT67$CatalogNumbers))
+sort(unique(NDT67$Collectors))
+sort(unique(NDT67$DateCollected))                                # 1891 to 1986
+
+# Notes & Comments
+sort(unique(NDT67$Anectodic))
+sort(unique(NDT67$Comments))
+```
+<p>&nbsp;</p>
+The dataset contains historical and contemporary data from 67 sites in 19 drainage basins. These sites represent different bodies of water, both lentic & lotic. The number of sites x basin ranges from 1 (lakes) to 10. Ten of the basins are represented by only 1 or 2 sites, on the other nine by more than 3.
+In the historical period, the richness of native species ranges from 1 to 17 species. The richness of non-native fish is mostly 0 but there are 4 non-native fish that appear in a few sites.
+In the contemporary period, the richness of native fish species ranges from 0 to 9 and the richness of non-natives ranges from 0 to 6. There are no native fish in 7 sites, and no non-native fish in 30 sites including those where no fish life was found. The native assemblage is preserved in 13 sites, 7 of which contain no introduced fishes.
+The historical collections are reconstructed with catalog records from the University of Michigan Museum of Zoology and the United States National Museum (Smithsonian). These records are mostly reported by Miller, but also other authors. The date of these collections ranges from 1891 to 1986 and therefore the historical period includes data that was collected in different time windows over a period of ~ 100 years.
+
+<p>&nbsp;</p>
+#### **Mapping local extirpations and introductions:**
+
+```{r}
+plot_dir <- "C:/Users/Usuario/Documents/PHD/CHAPTER3_Analyses/DataAnalysis&Visualization_FishCentralMexico/C_CoreAnalysisPlots" # Dir to save main plots
+
+# Palettes:
+# https://stackoverflow.com/questions/57153428/r-plot-color-combinations-that-are-colorblind-accessible
+bt_realms <-c("#155F49","#1EA19A","#61CDE0","#F7FFDA","#EBEB58","#E9AE27","#D17538")
+bt_realmsext <- colorRampPalette(bt_realms)(35)
+colorBlindBlack  <- c("#000000", "#E69F00", "#56B4E9", "#009E73", 
+                      "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+colorBlindetx <- colorRampPalette(colorBlindBlack)(35)
+#show_col(bt_realms)
+#show_col(bt_realmsext)
+
+# Map: --------------------------------------------------------------------------------------------
+
+# Black == no fish
+# Dark orange == no native fish (completely new assemblage)
+# Dark green == completely intact assemblage (all natives found and no non-natives)
+
+# Yellow orange == extirpations occuring
+# Reddish purple == extirpations and introductions occurring
+# Blue == introductions occuring
+
+# Trangle == samll rivers
+# Circle == shallow lakes
+# Square == springs
+# Romb == others
+
+# Check data: -------------------------------------------------------------------------------------
+no_fish <- NDT67$SiteNameE[(NDT67$CountNat2005+NDT67$CountNonNat2005==0)]            # 14
+new_assemblage <- NDT67$SiteNameE[NDT67$CountNat2005==0 & NDT67$CountNonNat2005>0]   # 7
+intact <- NDT67$SiteNameE[NDT67$CountNonNat2005==0 & NDT67$`RatioFound/Expected`==1] # 7
+extirpationsonly <- NDT67$SiteNameE[NDT67$CountHistNatBroad>NDT67$CountNat2005 & NDT67$CountNat2005>0 & NDT67$CountNonNat2005==0] # 9
+introductionsonly <- NDT67$SiteNameE[NDT67$CountHistNatBroad==NDT67$CountNat2005 & NDT67$CountNonNat2005>0] # 6
+
+67 - (14+7+7+9+6) # 24 (both)
+
+# Create plotting dataframe: ----------------------------------------------------------------------
+df <- data.frame("Site"=NDT67$SiteNameE, "Basin"=NDT67$DrainageBasinE, "Latitude"=NDT67$Latitude,"Longitude"=NDT67$Longitude, "Status"=rep(NA, nrow(NDT67))) # "Type"=NDT67$SiteType
+
+df$Status <- ifelse(df$Site %in% no_fish, "No fish found (14)", df$Status) # Black
+df$Status <- ifelse(df$Site %in% new_assemblage, "New assemblage (100% nonnatives) (7)", df$Status) # Dark blue
+df$Status <- ifelse(df$Site %in% intact, "Intact assemblage (7)", df$Status) # Green
+df$Status <- ifelse(df$Site %in% extirpationsonly, "Extirpations but no introductions (9)", df$Status) # Dark blue
+df$Status <- ifelse(df$Site %in% introductionsonly, "Introductions but no extirpations (6)", df$Status) # Green
+df$Status <- ifelse(is.na(df$Status), "Both introductions & extirpations (24)", df$Status) # Both introductions and extirpations
+sum(is.na(df$Status)) # 0, OK
+
+# df$Type <- ifelse(!df$Type %in% c("Shallow lake", "Small river", "Spring"), "Other", df$Type)
+
+
+# Mexico Map:
+world_map <- map_data('world', c('Mexico'), xlim=c(-115, -90), ylim=c(14,28))
+world_mapII <- world_map[world_map$long > -107 & world_map$long < -97,]
+world_mapII <- world_mapII[world_mapII$lat < 28 & world_mapII$lat > 16.5,]
+
+(g0<-ggplot()+coord_fixed()+xlab("")+ylab(""))
+(g0<-g0+geom_polygon(data=world_map, aes(x=long, y=lat, group=group), colour="black", fill="gray66"))
+(g0<-g0+theme_bw())
+g0
+
+(g1<-ggplot()+coord_fixed()+xlab("")+ylab(""))
+(g1<-g1+geom_polygon(data=world_mapII, aes(x=long, y=lat, group=group), colour="black", fill="gray66"))
+(g1<-g1+theme_bw())
+(g1<-g1+geom_point(data = df,  # Add and plot species data
+                   aes(x = Longitude, y = Latitude, 
+                       fill = Status), shape=21, size=5.5))
+(g1<-g1+labs(title="Surveyed locations in Central México"))
+#(g1<-g1+scale_shape_manual(values = c("Other" = 23,
+#                                     "Shallow lake"= 22,
+#                                     "Small river"=21,
+#                                     "Spring"=24))) 
+# Cannot add these since the "not habitable" don't have a type...? (it would have to go with shape=Type)
+(g1<-g1+scale_fill_manual(values = c("No fish found (14)" = "black",
+                                     "New assemblage (100% nonnatives) (7)"= "#D17538",
+                                     "Intact assemblage (7)"="#99CC33",
+                                     "Extirpations but no introductions (9)"="#E6A729",
+                                     "Introductions but no extirpations (6)"="#5DCADB",
+                                     "Both introductions & extirpations (24)"="#AA4499")))
+(g1 <- g1 + theme(legend.text = element_text(size=12),
+                  legend.title = element_text(size=14),
+                  plot.title = element_text(size=18, face="bold"),
+                  axis.text.x = element_text(size=12),
+                  axis.text.y = element_text(size=12)))
+MexicoMap <- g0
+EIMap <- g1
+
+ggsave(MexicoMap, file= paste0(plot_dir, "/MexicoMap.jpg"), width = 14, height = 8)
+ggsave(EIMap, file= paste0(plot_dir, "/EIMap.jpg"), width = 14, height = 8)
+
+# Proportions of the total:
+14/67*100
+7/67*100
+9/67*100
+24/67*100
+6/67*100
+```
+<p>&nbsp;</p>
+#### **Richness: **
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+listComms <- list(HNC, HNB, ContNE)
+listCommsL <- lapply(listComms, function(x){gather(x, key="Species", value="S", -c(1:2))})
+S <- lapply(listCommsL, function(x) {x <- x %>% group_by(SiteName) %>% summarise(S=sum(S))})
+
+# Nº sites with S=1, S=2 or S>3:
+S1 <- lapply(S, function(x) {x <- subset(x, x$S==1)}) # HC: 19, HB: 7 & Cont: 4
+S2 <- lapply(S, function(x) {x <- subset(x, x$S==2)}) # HC: 2, HB: 8 & Cont: 14
+S3 <- lapply(S, function(x) {x <- subset(x, x$S>3)})  # HC: 34, HB: 44, Cont: 27
+```
+<p>&nbsp;</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### **Species accumulation curves (Survey data 53): **
+
+```{r Fig1, echo=TRUE, results=TRUE, fig.height=7, fig.width=6}
+plot_dirSM <- "C:/Users/Usuario/Documents/PHD/CHAPTER3_Analyses/DataAnalysis&Visualization_FishCentralMexico/C_CoreAnalysisPlots" # Dir to save main plots
+list_nat_mat <- list("HNC"=as.matrix(HNC[,c(3:ncol(HNC))]), "HNB"=as.matrix(HNB[,c(3:ncol(HNB))]))
+listComms_mat <- lapply(listComms, function(x){as.matrix(x[,c(3:ncol(x))])})
+names(listComms_mat) <- c("Historical Conservative", "Historical Broad", "Contemporary")
+
+# Historical native data:
+listSpecaccumNat <- lapply(list_nat_mat, function(x) {x <- specaccum(x, method="random", permutations=1000)})
+listSpecaccumNat <- lapply(listSpecaccumNat, function(x) {x <- data.frame(cbind(x$sites, x$richness, x$sd))
+names(x) <-c("Sites", "Richness", "Sd");x})
+
+list_plotsNat <- list()
+for (i in 1:length(listSpecaccumNat)){
+  dt <- listSpecaccumNat[[i]]
+  x <- names(listSpecaccumNat)[[i]]
+  SpCurves <- ggplot(data=dt, aes(y=Richness, x=Sites)) +
+  geom_line() +
+  geom_ribbon(aes(ymin=(Richness-2*Sd), ymax=(Richness+2*Sd)),alpha=0.2)+ # Does a bit of a weird thing for low levels of richness
+  ylim(c(0,100))+
+  scale_x_continuous(breaks=c(0,20,40,60,80,100), 
+                   labels=c("0","20","40","60","80","100"))+
+  labs(title=x)+
+  theme_classic()+
+  theme(plot.title = element_text(size = 16, face = "bold"),
+    legend.title=element_text(size=14), 
+    legend.text=element_text(size=12))
+list_plotsNat[[i]] <- SpCurves
+}
+SpecaccumNat <- grid.arrange(grobs= list_plotsNat, nrow=2)
+ggsave(SpecaccumNat, file=paste0(plot_dirSM, "/SpecaccumNat.jpg"), width=8, height=8)
+
+# Complete survey data:
+listSpecaccum <- lapply(listComms_mat, function(x) {x <- specaccum(x, method="random", permutations=500)})
+listSpecaccum <- lapply(listSpecaccum, function(x) {x <- data.frame(cbind(x$sites, x$richness, x$sd))
+names(x) <-c("Sites", "Richness", "Sd");x})
+
+list_plots <- list()
+for (i in 1:length(listSpecaccum)){
+  dt <- listSpecaccum[[i]]
+  x <- names(listSpecaccum)[[i]]
+  SpCurves <- ggplot(data=dt, aes(y=Richness, x=Sites)) +
+  geom_line() +
+  #geom_point() +
+  #geom_errorbar(aes(ymin = Richness-Sd, ymax = Richness+Sd),width = 0.2)+ # Seems to be OK? TBC
+  geom_ribbon(aes(ymin=(Richness-2*Sd), ymax=(Richness+2*Sd)),alpha=0.2)+ # Does a bit of a weird thing for low levels of richness
+  ylim(c(0,100))+
+  scale_x_continuous(breaks=c(0,20,40,60,80,100), 
+                   labels=c("0","20","40","60","80","100"))+
+  labs(title=x)+
+  theme_classic()+
+  theme(plot.title = element_text(size = 16, face = "bold"),
+    legend.title=element_text(size=14), 
+    legend.text=element_text(size=12))
+list_plots[[i]] <- SpCurves
+}
+SpecaccumComs <- grid.arrange(grobs= list_plots, nrow=2)
+ggsave(SpecaccumComs, file=paste0(plot_dir, "/SpecaccumComs.jpg"), width=8, height=8)
+```
+<p>&nbsp;</p>
+Figure 1. Species accumulation curves for the 53 sites surveyed across Central Mexico. Each panel represents the curve for a) the Historical Native Conservative Survey (i.e. only catalog records), b) the Historical Native Broad Survey (extension made by Pablo) computed with 500 permutations and obtained by adding sites in a random order. Verical lines represent the standard deviation around the mean. Curves generated using the function speaccum in the vegan package.
+<p>&nbsp;</p>
+Figure 2. Species accumulation curves for the 53 sites surveyed across Central Mexico. Each panel represents the curve for a) the Historical Conservative Scenario (i.e. only catalog records), b) the Historical Broad scenario (extension made by Pablo) & c) the Contemporary assemblage computed with 500 permutations and obtained by adding sites in a random order. Verical lines represent the standard deviation around the mean. Curves generated using the function speaccum in the vegan package.
+
+__Interpretation: no curve reaches a plateau, indicating that it is likely that more species in the region would have been detected with sampling of additional sites.__
+<p>&nbsp;</p>
+#### **Estimated gamma diversity (Survey data 53):**
+
+```{r, echo=TRUE, results=TRUE}
+# Historical native data:
+listSpecpoolNat <- lapply(list_nat_mat, function(x){specpool(x)}) 
+listSpecpoolNat <- do.call(rbind,listSpecpoolNat)
+listSpecpoolNat %>%
+  kbl() %>%
+  kable_styling()
+
+# Complete survey data:
+listSpecpool <- lapply(listComms_mat, function(x){specpool(x)}) 
+listSpecpool <- do.call(rbind,listSpecpool)
+listSpecpool %>%
+  kbl() %>%
+  kable_styling()
+```
+<p>&nbsp;</p>
+Table 1. Extrapolated gamma richness estimated using the reference data from each survey. The first column indicates the observed richness and the subsequent ones indicate the extrapolated mean richness & se computed with different indexes. HNC: Historical Native Conservative, HNB: Historical Native Broad. 
+<p>&nbsp;</p>
+Table 2. Extrapolated gamma richness estimated using the reference data from each survey. The first column indicates the observed richness and the subsequent ones indicate the extrapolated mean richness & se computed with different indexes. HC: Historical conservative, HB: Historical Broad & Cont: Contemporary. Estimators obtained with the function specpool in the vegan package.
+<p>&nbsp;</p>
+
+__Interpretation: even though the curves for each period are broadly similar, we can see how, for every index, the estimated mean gamma richness is lower for the contemporary period than for the historical periods. Our detected temporal trend toward spatial differentiation, if anything, goes in the opposite direction. Therefore, it is unlikely that it is explained by a sampling effect.__
+
+__End of script__
