@@ -110,10 +110,124 @@ fishtrait$MBl <- BSU$Final[match(as.character(fishtrait$Genus.species), as.chara
 ###########################################################################################
 # 3) Fill out missing species data:
 setwd("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/Traits/Measurements")
-file_names <- dir()
-new_photo <- do.call(rbind,lapply(file_names,read.csv))                                       # All data
+file_names <- dir() # 26
+mes <- do.call(rbind,lapply(file_names,read.csv))   # 312 (12*26)                                # All data
 setwd("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2")   # Go back to main dir
 
+# Retrieve mesurements:
+file_names <- str_split_fixed(file_names, "_", 2)[,2]
+file_names <- str_split_fixed(file_names, "\\.", 2)[,1]
+file_names <- gsub("_", " ", file_names)
+
+mes$S <- rep(file_names, each=12)
+mes$M <- rep(c("Bl", "Bd", "Hd", "Ed", "CPd", "CFd", "Eh", "Mo", "Jl", "PFh", "PFi", "PFiII"), times=26)
+
+sum(mes$Length==0)  # 6
+sum(mes$Length <0)  # 0
+mes$Length[mes$Length==0] <- NA # Measurements that could not be taken
+sum(is.na(mes$Length))
+
+mes <- mes[c("S", "M", "Length")]
+names(mes) <- c("Species", "Measure", "Length")
+
+mes_mat <- spread(mes, key="Measure", value="Length")
+
+# Compute ratios:
+fishtrait_fill <- subset(fishtrait, fishtrait$Genus.species %in% file_names) #23, OK
+names(fishtrait_fill)
+
+gila_mes_mat <- subset(mes_mat, mes_mat$Species %in% c("Gila conspersa", "Gila minaceae", "Gila pulchra"))
+mes_mat <- mes_mat[! mes_mat$Species %in% c("Gila conspersa", "Gila minaceae", "Gila pulchra"),]
+
+fishtrait_fill$BEl <- mes_mat$Bl/mes_mat$Bd
+fishtrait_fill$VEp <- mes_mat$Eh/mes_mat$Bd
+fishtrait_fill$REs <- mes_mat$Ed/mes_mat$Hd
+fishtrait_fill$OGp <- mes_mat$Mo/mes_mat$Bd
+fishtrait_fill$RMl <- mes_mat$Jl/mes_mat$Hd
+fishtrait_fill$BLs <- mes_mat$Hd/mes_mat$Bd
+fishtrait_fill$PFv <- mes_mat$PFiII/mes_mat$Bd #Or PFi
+fishtrait_fill$PFs <- mes_mat$PFh/mes_mat$Bl
+fishtrait_fill$CPt <- mes_mat$CFd/mes_mat$CPd
+
+save(fishtrait_fill, file="fishtrait_fill.RData")
+
+fishtrait_fill$Reference <- rep("Miller, R.R. (2009) Freshwater Fishes of México (Peces Dulceacuícolas de México). 1st edn.", nrow(fishtrait_fill))
+fishtrait_fill$Type.of.illustration <- rep("Picture", nrow(fishtrait_fill))
+fishtrait_fill$Type.of.illustration <- ifelse(fishtrait_fill$Genus.species %in% c("Allotoca zacapuensis",
+                                                                                  "Ictalurus mexicanus",
+                                                                                  "Pseudoxiphophorus jonesii",
+                                                                                  "Sicydium multipunctatum",
+                                                                                  "Yuriria chapalae"), "Drawing",fishtrait_fill$Type.of.illustration)
+fishtrait <- fishtrait[! fishtrait$Genus.species %in% fishtrait_fill$Genus.species,]
+fishtrait <- retype(fishtrait)
+fishtrait_fill <- retype(fishtrait_fill)
+fishtrait <- bind_rows(fishtrait, fishtrait_fill)
+
+# Genus sp records:
+fishtrait$Genus <- rep(NA, nrow(fishtrait))
+fishtrait$Genus <- str_split_fixed(fishtrait$Genus.species, " ", 2)[,1]
+
+Ore <- subset(fishtrait, fishtrait$Genus=="Oreochromis")  # Average between O. mossambicus, O. aureus & O. niloticus
+Ore_m <- apply(Ore[,c(6:15)], 2, mean, na.rm=TRUE) 
+Ore_sp <- c(NA, NA, NA, NA,"Oreochromis sp", Ore_m, NA, NA, NA) 
+
+Heter <- subset(fishtrait, fishtrait$Genus=="Pseudoxiphophorus") # Average between P. jonesii & P. bimaculatus
+Heter_m <- apply(Heter[,c(6:15)], 2, mean, na.rm=TRUE) 
+Heter_sp <- c(NA, NA, NA, NA,"Pseudoxiphophorus sp", Heter_m, NA, NA, NA)
+
+Ast <- subset(fishtrait, fishtrait$Genus=="Astyanax") # Average between A. aeneus & A. mexicanus
+Ast_m <- apply(Ast[,c(6:15)], 2, mean, na.rm=TRUE)
+Ast_sp <- c(NA, NA, NA, NA,"Astyanax sp", Ast_m, NA, NA, NA)
+
+Poe <- subset(fishtrait, fishtrait$Genus=="Poecilia") # Average between P. butleri, P. mexicana, P. reticulata, P. sphenops & P. chica
+Poe_m <- apply(Poe[,c(6:15)], 2, mean, na.rm=TRUE) 
+Poe_sp <- c(NA, NA, NA, NA,"Poecilia sp", Poe_m, NA, NA, NA)
+
+Poel <- subset(fishtrait, fishtrait$Genus=="Poeciliopsis") 
+# Average between P. balsas, P. gracilis, P. infans, P. turrubarensis, P. viriosa, P. baenschi, P. turneri
+Poel_m <- apply(Poel[,c(6:15)], 2, mean, na.rm=TRUE) 
+Poel_sp <- c(NA, NA, NA, NA,"Poeciliopsis sp", Poel_m, NA, NA, NA)
+
+Chir <- subset(fishtrait, fishtrait$Genus=="Chirostoma")
+# Average between C. aculeatum, C. arge, C. chapalae, C. riojai, C. charari, C. consocium, C. humboldtianum, C. jordani, C. labarcae
+Chir_m <- apply(Chir[,c(6:15)], 2, mean, na.rm=TRUE) 
+Chir_sp <- c(NA, NA, NA, NA,"Chirostoma sp", Chir_m, NA, NA, NA)
+
+# Average results of all the possible native species in the genus Gila:
+# According to Miller (2005) the ones that are more likely to be are: Gila conspersa, Gila minaceae, Gila modesta & Gila pulchra.
+Gila_modesta <- subset(FMorph, FMorph$Genus.species %in% "Gila modesta")
+Gila_modesta$MBl <- 10.2  # MBl update (Miller, 2005)
+
+Gila <- as.data.frame(matrix(ncol=18, nrow=3))
+names(Gila) <- names(fishtrait)
+
+Gila$Genus.species <- gila_mes_mat$Species
+Gila$MBl <- c(16.5, 60, 15.4) # Miller (2005)
+Gila$BEl <- gila_mes_mat$Bl/gila_mes_mat$Bd
+Gila$VEp <- gila_mes_mat$Eh/gila_mes_mat$Bd
+Gila$REs <- gila_mes_mat$Ed/gila_mes_mat$Hd
+Gila$OGp <- gila_mes_mat$Mo/gila_mes_mat$Bd
+Gila$RMl <- gila_mes_mat$Jl/gila_mes_mat$Hd
+Gila$BLs <- gila_mes_mat$Hd/gila_mes_mat$Bd
+Gila$PFv <- gila_mes_mat$PFiII/gila_mes_mat$Bd
+Gila$PFs <- gila_mes_mat$PFh/gila_mes_mat$Bl
+Gila$CPt <- gila_mes_mat$CFd/gila_mes_mat$CPd
+
+Gila_modesta$Genus <- rep("Gila", nrow(Gila_modesta))
+Gila <- rbind(Gila_modesta, Gila)
+Gila <- retype(Gila)
+Gil_m <- apply(Gila[,c(6:15)], 2, mean, na.rm=TRUE) 
+Gil_sp <- c(NA, NA, NA, NA, "Gila sp", Gil_m, NA, NA, NA)
+
+
+fishtrait <- fishtrait[! fishtrait$Genus.species %in% c("Astyanax sp", "Poecilia sp",
+                                                        "Gila sp", "Poeciliopsis sp",
+                                                        "Oreochromis sp", "Chirostoma sp",
+                                                        "Pseudoxiphophorus sp"),]
+fishtrait_complete <- rbind(fishtrait, Ore_sp, Ast_sp, Poe_sp, Poel_sp, Heter_sp, Chir_sp, Gil_sp)
+fishtrait_complete <- retype(fishtrait_complete)
+
+save(fishtrait_complete, file="fishtrait_complete.RData")
 
 ###########################################################################################
 # End of script ###########################################################################
