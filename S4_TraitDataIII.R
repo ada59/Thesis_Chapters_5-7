@@ -75,7 +75,7 @@ round(qfsp$quality_fspaces, 3)
 quality.fspaces.plot(qfsp, "mad", fspaces_plot = rownames(qfsp$quality_fspaces))
 coords_qfsp <- qfsp$details_fspaces$sp_pc_coord #(same output of prcomp)
 
-# NOTE: Quality increases consistently with increasing nº of traits.
+# NOTE: Quality increases consistently with increasing n? of traits.
 
 
 # Mapping exotics / natives extirpated & remaining:----------------------------------------
@@ -194,7 +194,7 @@ PCA$cos2           # Quality of representation
 # NOTES:
 # Dim 1: seems to be a distinction in hydrodynamism between introduced and extirpated fish, with remaining natives showing more middle values
 # Dim 2: here natives appear to have slightly more different values than extirpated and introduced fish.
-# PERMANOVAs?¿
+# PERMANOVAs??
 
 (iIV <- fviz_pca_ind(PCA,
                      axes = c(3,4),
@@ -207,7 +207,10 @@ PCA$cos2           # Quality of representation
 # NOTES:
 # Dim 3: seems to be a distinction in feeding strategy in the water column between introduced and extirpated fish, with remaining natives showing more middle values
 # Dim 4: clear distinction between groups not observed along this dimension
-# PERMANOVAs?¿
+# PERMANOVAs??
+
+# Save plots: -----------------------------------------------------------------------------
+# TBC
 
 ###########################################################################################
 # End of script ###########################################################################
