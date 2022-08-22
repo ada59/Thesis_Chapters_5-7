@@ -173,6 +173,108 @@ AIC(hnb66_1, hnb66_2)
 ##########################################################################################
 # Null TD and FD: ------------------------------------------------------------------------
 
+Natives <- names(HNB[,-c(1:2)])
+All <- unique(c(names(HNB[,-c(1:2)]), names(ContAll[,-c(1:2)]))) 
+
+rand <- list()
+rand17 <- list()
+
+# Natives:
+for (j in 1:999){
+  for(i in 1:17){
+    df <- as.data.frame(matrix(ncol=78, nrow=1))
+    names(df) <- Natives
+    samp <- sample(Natives, size = i, replace = FALSE)
+    df[as.character(samp)] <- 1
+    df[is.na(df)] <- 0
+    rand17[[i]] <- df
+  } 
+  rand[[j]] <- do.call(rbind, rand17)
+} 
+
+rand_all <- list()
+rand17_all <- list()
+
+# All:
+for (j in 1:999){
+  for(i in 1:17){
+    df <- as.data.frame(matrix(ncol=100, nrow=1))
+    names(df) <- All
+    samp <- sample(All, size = i, replace = FALSE)
+    df[as.character(samp)] <- 1
+    df[is.na(df)] <- 0
+    rand17_all[[i]] <- df
+  } 
+  rand_all[[j]] <- do.call(rbind, rand17_all)
+} 
+
+randNatives <- do.call(rbind, rand)
+randAll <- do.call(rbind, rand_all)
+
+save(randNatives, file="randNatives.RData")
+save(randAll, file="randAll.RData")
+
+# Compute FD: ----------------------------------------------------------------------------
+
+names(randNatives)[names(randNatives)=="Agonostomus monticola"] <- "Dajaus monticola"
+names(randAll)[names(randAll)=="Agonostomus monticola"] <- "Dajaus monticola"
+
+randNatives <- randNatives[, order(names(randNatives))]
+randAll <- randAll[, order(names(randAll))]
+
+dist_mat1 <- dist_mat1[order(rownames(dist_mat1)), order(colnames(dist_mat1))]
+identical(colnames(dist_mat1), names(randAll)) # TRUE
+
+
+rem <- setdiff(colnames(dist_mat1), names(randNatives))
+dist_mat2 <- dist_mat1[!rownames(dist_mat1) %in% rem,!colnames(dist_mat1) %in% rem]
+identical(colnames(dist_mat2), names(randNatives)) # TRUE
+
+
+randAll_l <- split(randAll, f=rownames(randAll))
+randNatives_l <- split(randNatives, f=rownames(randNatives))
+
+FD0All <- list()
+for (i in 1:length(randAll_l)){
+  assemblage <- as.matrix(t(randAll_l[[i]]))
+  TD0_n <- colSums(assemblage)
+  FD0_n <- FD_MLE(assemblage, dist_mat1, mean(dist_mat1[dist_mat1>0]), q=0)
+  FD0All[[i]] <- cbind(TD0_n, FD0_n)
+}
+
+FD0Natives <- list()
+for (i in 1:length(randNatives_l)){
+  assemblage <- as.matrix(t(randNatives_l[[i]]))
+  TD0_n <- colSums(assemblage)
+  FD0_n <- FD_MLE(assemblage, dist_mat2, mean(dist_mat2[dist_mat2>0]), q=0)
+  FD0Natives[[i]] <- cbind(TD0_n, FD0_n)
+}
+
+
+RandFD0All <- as.data.frame(do.call(rbind,  FD0All))
+RandFD0Natives <- as.data.frame(do.call(rbind,  FD0Natives))
+
+save(RandFD0All, file="RandFD0All.RData")
+save(RandFD0Natives, file="RandFD0Natives.RData")
+
+
+# Plot:
+(nullAll <- ggplot(data=RandFD0All, aes(x=as.factor(TD0_n), y=FD0_n))+
+    geom_boxplot()+
+    stat_boxplot(geom ='errorbar') + 
+    xlab("S")+
+    ylab("FD0")+
+    theme_minimal()) 
+
+(nullNatives <- ggplot(data=RandFD0Natives, aes(x=as.factor(TD0_n), y=FD0_n))+
+    geom_boxplot()+
+    stat_boxplot(geom ='errorbar') + 
+    xlab("S")+
+    ylab("FD0")+
+    theme_minimal()) 
+
+
+bp + geom_point(data = DF, aes(x=as.factor(TD0),y=FD0),colour="red", size=4, alpha=0.5)
 
 
 ###########################################################################################
