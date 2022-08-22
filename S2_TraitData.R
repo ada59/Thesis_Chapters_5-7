@@ -132,6 +132,38 @@ names(mes) <- c("Species", "Measure", "Length")
 
 mes_mat <- spread(mes, key="Measure", value="Length")
 
+# Corrected eye measurements (5 sps):
+setwd("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/Traits/Measurements_Corrected")
+file_namesC <- dir() # 5
+mesC <- do.call(rbind,lapply(file_namesC,read.csv))
+setwd("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2") 
+
+file_namesC <- gsub("_", " ", str_split_fixed(file_namesC, "_", 2)[,2])
+file_namesC <- str_split_fixed(file_namesC, "\\.", 2)[,1]
+
+mesC$S <- rep(file_namesC, each=2)
+mesC$M <- rep(c("Hd", "Ed"), times=5)
+
+# Atherinella balsana:
+mes_mat$Hd[mes_mat$Species=="Atherinella balsana"] <- mesC$Length[mesC$S=="Atherinella balsana" & mesC$M=="Hd"]
+mes_mat$Ed[mes_mat$Species=="Atherinella balsana"] <- mesC$Length[mesC$S=="Atherinella balsana" & mesC$M=="Ed"]
+
+# Chirostoma jordani:
+mes_mat$Hd[mes_mat$Species=="Chirostoma jordani"] <- mesC$Length[mesC$S=="Chirostoma jordani" & mesC$M=="Hd"]
+mes_mat$Ed[mes_mat$Species=="Chirostoma jordani"] <- mesC$Length[mesC$S=="Chirostoma jordani" & mesC$M=="Ed"]
+
+# Chirostoma labarcae:
+mes_mat$Hd[mes_mat$Species=="Chirostoma labarcae"] <- mesC$Length[mesC$S=="Chirostoma labarcae" & mesC$M=="Hd"]
+mes_mat$Ed[mes_mat$Species=="Chirostoma labarcae"] <- mesC$Length[mesC$S=="Chirostoma labarcae" & mesC$M=="Ed"]
+
+# Pseudoxiphophorus jonesii:
+mes_mat$Hd[mes_mat$Species=="Pseudoxiphophorus jonesii"] <- mesC$Length[mesC$S=="Pseudoxiphophorus jonesii" & mesC$M=="Hd"]
+mes_mat$Ed[mes_mat$Species=="Pseudoxiphophorus jonesii"] <- mesC$Length[mesC$S=="Pseudoxiphophorus jonesii" & mesC$M=="Ed"]
+
+# Xiphophorus variatus:
+mes_mat$Hd[mes_mat$Species=="Xiphophorus variatus"] <- mesC$Length[mesC$S=="Xiphophorus variatus" & mesC$M=="Hd"]
+mes_mat$Ed[mes_mat$Species=="Xiphophorus variatus"] <- mesC$Length[mesC$S=="Xiphophorus variatus" & mesC$M=="Ed"]
+
 # Compute ratios:
 fishtrait_fill <- subset(fishtrait, fishtrait$Genus.species %in% file_names) #23, OK
 names(fishtrait_fill)
@@ -149,9 +181,10 @@ fishtrait_fill$PFv <- mes_mat$PFiII/mes_mat$Bd #Or PFi
 fishtrait_fill$PFs <- mes_mat$PFh/mes_mat$Bl
 fishtrait_fill$CPt <- mes_mat$CFd/mes_mat$CPd
 
+
 save(fishtrait_fill, file="fishtrait_fill.RData")
 
-fishtrait_fill$Reference <- rep("Miller, R.R. (2009) Freshwater Fishes of México (Peces Dulceacuícolas de México). 1st edn.", nrow(fishtrait_fill))
+fishtrait_fill$Reference <- rep("Miller, R.R. (2009) Freshwater Fishes of Mexico (Peces Dulceacuicolas de Mexico). 1st edn.", nrow(fishtrait_fill))
 fishtrait_fill$Type.of.illustration <- rep("Picture", nrow(fishtrait_fill))
 fishtrait_fill$Type.of.illustration <- ifelse(fishtrait_fill$Genus.species %in% c("Allotoca zacapuensis",
                                                                                   "Ictalurus mexicanus",
@@ -218,7 +251,6 @@ Gila <- rbind(Gila_modesta, Gila)
 Gila <- retype(Gila)
 Gil_m <- apply(Gila[,c(6:15)], 2, mean, na.rm=TRUE) 
 Gil_sp <- c(NA, NA, NA, NA, "Gila sp", Gil_m, NA, NA, NA)
-
 
 fishtrait <- fishtrait[! fishtrait$Genus.species %in% c("Astyanax sp", "Poecilia sp",
                                                         "Gila sp", "Poeciliopsis sp",

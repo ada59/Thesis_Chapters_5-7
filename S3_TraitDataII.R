@@ -18,18 +18,17 @@ load("fishtrait_complete.RData")
 str(fishtrait_complete)
 
 # Imputations: ----------------------------------------------------------------------------
-rownames(fishtrait_complete) <- fishtrait_complete$Genus.species
-fishtrait_complete <- fishtrait_complete[c("MBl", "BEl", "VEp", "REs", "OGp", "RMl","BLs","PFv","PFs","CPt")]
+fishtrait_completeII <- fishtrait_complete[c("MBl", "BEl", "VEp", "REs", "OGp", "RMl","BLs","PFv","PFs","CPt")]
+rownames(fishtrait_completeII) <- fishtrait_complete$Genus.species
 
-
-sum(is.na(fishtrait_complete))  # 15
+sum(is.na(fishtrait_completeII))  # 15
 (15/(100*10))*100     # 1.5 %
 
 ntimes <- 100
 t_imp <- list()
 t_err <- list()
 for (i in 1:ntimes){
-  mat <- as.matrix(fishtrait_complete)
+  mat <- as.matrix(fishtrait_completeII)
   miss <- missForest(mat)
   mat_imp <- miss$ximp
   mat_err <- miss$OOBerror
@@ -39,8 +38,8 @@ for (i in 1:ntimes){
 t_impm <- do.call(cbind, t_imp)
 t_impm <- array(t_impm, dim=c(dim(t_imp[[1]]), length(t_imp)))
 t_impm <- as.matrix(apply(t_impm, c(1, 2), mean))              # Mean across the 100 objects
-rownames(t_impm) <- rownames(fishtrait_complete)
-colnames(t_impm) <- colnames(fishtrait_complete)
+rownames(t_impm) <- rownames(fishtrait_completeII)
+colnames(t_impm) <- colnames(fishtrait_completeII)
 
 fishtrait_complete_imp <- t_impm
 
