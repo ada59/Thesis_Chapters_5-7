@@ -51,12 +51,15 @@ ContAll$`Poecilia sphenops`<- ContAll$`Poecilia sphenops.x`+ ContAll$`Poecilia s
 ContAll <- ContAll[, ! names(ContAll) %in% c("Goodea atripinnis.x", "Goodea atripinnis.y",
                                             "Poecilia butleri.x", "Poecilia butleri.y",
                                             "Poecilia sphenops.x", "Poecilia sphenops.y")]
+save(ContAll, file="ContAll.RData")
 
 l <- bind_rows(HNC, HNB, ContN, ContAll)
 l[is.na(l)] <- 0
 sum(is.na(l)) # 0
 
 l$Period <- rep(c("HNC", "HNB", "ContN", "ContAll"), each=67)
+All  <- l
+save(All, file="All.RData")
 rownames(l) <- paste0(l$SiteNameE, "_", l$Period)
 l <- within(l, rm(SiteNameE, DrainageBasinE, Period))
 l <- l[, order(names(l))]
@@ -91,8 +94,11 @@ divF0d$SiteName <- str_split_fixed(rownames(divF0d), "_", 2)[,1]
 divF0d$Period <- str_split_fixed(rownames(divF0d), "_", 2)[,2]
 
 div <- left_join(divT0d, divF0d, by=c("SiteName", "Period"))
+div$SiteName <- as.factor(div$SiteName)
+div$Period <- as.factor(div$Period)
 names(div) <- c("T0", "SiteName", "Period", "F0")
 
+##########################################################################################
 # Observed trends: -----------------------------------------------------------------------
 # Subsets:
 hnc <- subset(div, div$Period=="HNC")
@@ -113,43 +119,46 @@ contAll <- contAll[!contAll$T0==0,] # 53
 # Historical conservative:
 hnc_1 <- lm(F0 ~ T0, data=hnc)
 hnc_2 <- lm(F0 ~ log(T0+1), data=hnc)
-hnc_3 <- lm(F0 ~ log(T0), data=hnc)
 
-AIC(hnc_1, hnc_2, hnc_3) # Curve
+AIC(hnc_1, hnc_2) # Curve
 
 # Historical broad:
 hnb_1 <- lm(F0 ~ T0, data=hnb)
 hnb_2 <- lm(F0 ~ log(T0+1), data=hnb)
-hnb_3 <- lm(F0 ~ log(T0), data=hnb)
 
-AIC(hnb_1, hnb_2, hnb_3)
+AIC(hnb_1, hnb_2)
 
 # Current native:
 contN_1 <- lm(F0 ~ T0, data=contN)
 contN_2 <- lm(F0 ~ log(T0+1), data=contN)
-contN_3 <- lm(F0 ~ log(T0), data=contN)
 
-AIC(contN_1, contN_2, contN_3)
+AIC(contN_1, contN_2)
 
 # Current All:
 contAll_1 <- lm(F0 ~ T0, data=contAll)
 contAll_2 <- lm(F0 ~ log(T0+1), data=contAll)
-contAll_3 <- lm(F0 ~ log(T0), data=contAll)
 
-AIC(contAll_1, contAll_2, contAll_3)
+AIC(contAll_1, contAll_2)
 
+# NOTE:
 # A curve is a better fit in all cases.
 
+div$Period <- recode_factor(div$Period, HNC  = "A) Historical conservative", 
+                                                HNB = "B) Historical broad",
+                                                ContN = "C) Contemporary Natives",
+                                                ContAll = "D) Contemporary Natives + Exotics")
+
+# Plot trends:
 (p1 <- ggplot(div, aes(x=T0, y=F0, color=Period))+
   geom_point(aes(color=Period))+
   geom_smooth()+
-  theme_bw()+
+  theme_classic()+
   facet_wrap(~Period))
 
 (p2 <- ggplot(div, aes(x=T0, y=F0, color=Period))+
     geom_point(aes(color=Period))+
     geom_smooth(method=lm, formula = y ~ log(x+1))+
-    theme_bw()+
+    theme_classic()+
     facet_wrap(~Period))
 
 # Remove locality with richness = 17 in the historical period.
@@ -168,7 +177,7 @@ hnb66_2 <- lm(F0 ~ log(T0+1), data=hnb66)
 AIC(hnb66_1, hnb66_2)
 
 # The locality with more species doesn't drive the trend observed 
-# (asymptote is a better fit)
+# (asymptotes continue to be a better fit)
 
 ##########################################################################################
 # Null TD and FD: ------------------------------------------------------------------------
@@ -214,6 +223,7 @@ randAll <- do.call(rbind, rand_all)
 save(randNatives, file="randNatives.RData")
 save(randAll, file="randAll.RData")
 
+##########################################################################################
 # Compute FD: ----------------------------------------------------------------------------
 
 names(randNatives)[names(randNatives)=="Agonostomus monticola"] <- "Dajaus monticola"
@@ -225,11 +235,9 @@ randAll <- randAll[, order(names(randAll))]
 dist_mat1 <- dist_mat1[order(rownames(dist_mat1)), order(colnames(dist_mat1))]
 identical(colnames(dist_mat1), names(randAll)) # TRUE
 
-
 rem <- setdiff(colnames(dist_mat1), names(randNatives))
 dist_mat2 <- dist_mat1[!rownames(dist_mat1) %in% rem,!colnames(dist_mat1) %in% rem]
 identical(colnames(dist_mat2), names(randNatives)) # TRUE
-
 
 randAll_l <- split(randAll, f=rownames(randAll))
 randNatives_l <- split(randNatives, f=rownames(randNatives))
@@ -257,25 +265,44 @@ RandFD0Natives <- as.data.frame(do.call(rbind,  FD0Natives))
 save(RandFD0All, file="RandFD0All.RData")
 save(RandFD0Natives, file="RandFD0Natives.RData")
 
+##########################################################################################
+# Plots:----------------------------------------------------------------------------------
+# https://waterdata.usgs.gov/blog/boxplots/
 
-# Plot:
+sum(div$T0==0) # 35
+div <- div[!div$T0==0,]
+
+
+# Null model (all fish)
 (nullAll <- ggplot(data=RandFD0All, aes(x=as.factor(TD0_n), y=FD0_n))+
     geom_boxplot()+
     stat_boxplot(geom ='errorbar') + 
-    xlab("S")+
-    ylab("FD0")+
+    xlab("TD")+
+    ylab("FD")+
     theme_minimal()) 
+(nullAll + geom_point(data = div, aes(x=T0,y=F0, color=Period), size=3, alpha=0.5)+
+    geom_smooth(data = div, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
+    scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "green"))+
+    facet_wrap(~Period))
 
+
+# Null model (only native fish)
 (nullNatives <- ggplot(data=RandFD0Natives, aes(x=as.factor(TD0_n), y=FD0_n))+
     geom_boxplot()+
     stat_boxplot(geom ='errorbar') + 
-    xlab("S")+
+    xlab("TD=")+
     ylab("FD0")+
     theme_minimal()) 
+(nullNatives + geom_point(data = div, aes(x=T0,y=F0, color=Period), size=3, alpha=0.5)+
+    geom_smooth(data = div, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
+    scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9", "green"))+
+    facet_wrap(~Period))
 
 
-bp + geom_point(data = DF, aes(x=as.factor(TD0),y=FD0),colour="red", size=4, alpha=0.5)
-
+###########################################################################################
+# S.E.S. values and the quantile scores
+# Page 126 (135)
+# TBC
 
 ###########################################################################################
 # End of script ###########################################################################

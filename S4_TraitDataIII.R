@@ -64,6 +64,8 @@ tt <- as.data.frame(tt)
 tt[] <- data.frame(apply(tt, 2, scale)) # Defaults are TRUE center & scale
 round(diag(cov(tt)), 2) 
 
+save(tt, file="tt.RData")
+
 dist_mat1 <- as.matrix(daisy(tt, metric = "euclidean"))
 dist_matS <- (dist_mat1 - min(dist_mat1)) / (max(dist_mat1) - min(dist_mat1)) # Re-scale between 0 & 1
 
