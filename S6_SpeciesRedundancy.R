@@ -11,6 +11,7 @@ library(tidyverse)
 library(stringr)
 library(mFD)
 library(funrar)
+library(data.table)
 
 rm(list=ls())
 myd <- getwd()
@@ -50,7 +51,7 @@ tt <- as.matrix(tt)
 identical(colnames(All), colnames(dist_mat1))  # TRUE
 identical(colnames(All), rownames(tt))         # TRUE
 
-
+###########################################################################################
 # Uniqueness (regional):------------------------------------------------------------------
 Uii <- uniqueness(All, dist_matrix = dist_mat1)
 
@@ -100,4 +101,20 @@ Uii$StatusIII <- ifelse(Uii$Status %in% "Extirpated", "Extirpated", Uii$StatusII
     theme(axis.text = element_text(size = 20))+
     theme_bw())
 
+###########################################################################################
+# Distinctiveness (local):-----------------------------------------------------------------
 
+Dii <- distinctiveness(All, dist_matrix = dist_mat1)
+
+hnc <- subset(Dii, rownames(Dii) %like% "HNC")
+hnb <- subset(Dii, rownames(Dii) %like% "HNB")
+contN <- subset(Dii, rownames(Dii) %like% "ContN")
+contAll <- subset(Dii, rownames(Dii) %like% "ContAll")
+
+hnb_d <- apply(hnb, 2, mean, na.rm=TRUE)
+sum(is.nan(hnb_d)) # 22 exotics, OK.
+
+contall_d <- apply(contAll, 2, mean, na.rm=TRUE)
+sum(is.nan(contall_d)) # 30 extirpated, OK
+
+hnb_d_dat <- as.data.frame(hnb_d)
