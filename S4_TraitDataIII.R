@@ -16,6 +16,7 @@ library(mFD)
 
 rm(list=ls())
 myd <- getwd()
+plot_dir <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Plots" # Dir to save main plots
 
 # Read data:-------------------------------------------------------------------------------
 load(paste0(myd, "/HNB.RData"))   # Broad Historical Native Assemblage
@@ -67,7 +68,7 @@ round(diag(cov(tt)), 2)
 save(tt, file="tt.RData")
 
 dist_mat1 <- as.matrix(daisy(tt, metric = "euclidean"))
-dist_matS <- (dist_mat1 - min(dist_mat1)) / (max(dist_mat1) - min(dist_mat1)) # Re-scale between 0 & 1
+dist_mat1 <- (dist_mat1 - min(dist_mat1)) / (max(dist_mat1) - min(dist_mat1)) # Re-scale between 0 & 1
 
 save(dist_mat1, file="dist_mat1.RData")
 
@@ -160,10 +161,10 @@ eig.val <- get_eigenvalue(PCA)
 eig.val # Reach > 80% var explained with first five components
 
 # Results for Variables
-PCA <- get_pca_var(PCA)
-PCA$coord          # Coordinates
-PCA$contrib        # Contributions to the PCs
-PCA$cos2           # Quality of representation 
+PCAv <- get_pca_var(PCA)
+PCAv$coord          # Coordinates
+PCAv$contrib        # Contributions to the PCs
+PCAv$cos2           # Quality of representation 
 
 # NOTES:
 fviz_contrib(PCA, choice = "var", axes = 1, top = 10) # Body elongation (hydrodynamism) and pectoral fin use for swimming
@@ -180,17 +181,18 @@ fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
 # caudal propulsion efficiency through reduction of drag, swimming mode (also somewhat affected by body size)
 
 # Results for individuals
-PCA <- get_pca_ind(PCA)
-PCA$coord          # Coordinates
-PCA$contrib        # Contributions to the PCs
-PCA$cos2           # Quality of representation 
+PCAi <- get_pca_ind(PCA)
+PCAi$coord          # Coordinates
+PCAi$contrib        # Contributions to the PCs
+PCAi$cos2           # Quality of representation 
 
 # PLot Individuals (Status):
 (iIII <- fviz_pca_ind(PCA,
                       label = "none", # hide individual labels
                       habillage = tt$Status, # color by groups
                       palette = c("#0072B2", "#F0E442", "Darkgray"),
-                      addEllipses = FALSE # TRUE for concentration ellipses
+                      addEllipses = TRUE, # TRUE for concentration ellipses
+                      ellipse.type = "convex"
 ))
 
 # NOTES:
@@ -203,7 +205,8 @@ PCA$cos2           # Quality of representation
                      label = "none", # hide individual labels
                      habillage = tt$Status, # color by groups
                      palette = c("#0072B2", "#F0E442", "Darkgray"),
-                     addEllipses = FALSE # TRUE for concentration ellipses
+                     addEllipses = TRUE, # TRUE for concentration ellipses
+                     ellipse.type = "convex"
 ))
 
 # NOTES:
@@ -212,8 +215,10 @@ PCA$cos2           # Quality of representation
 # PERMANOVAs??
 
 # Save plots: -----------------------------------------------------------------------------
-# TBC
+ggsave(iIII, file= paste0(plot_dir, "/biplot1-2.jpg"), width = 12, height = 10) 
+ggsave(iIV, file= paste0(plot_dir, "/biplot3-4.jpg"), width = 12, height = 10) 
 
 ###########################################################################################
 # End of script ###########################################################################
+
 
