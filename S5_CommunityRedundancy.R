@@ -399,6 +399,15 @@ ggsave(psesNat, file= paste0(plot_dir, "/SES_Natives.jpg"), width = 12, height =
 
 
 # Quantile scores:-------------------------------------------------------------------------
+# The test is two sided:
+# P -values less than or equal to 0.025:significantly less F0 than expected
+# Greater than or equal to 0.975: significantly more F0 than expected
+div$Period <- recode_factor(div$Period,
+                            "A) Historical conservative"="A) HNC",
+                            "B) Historical broad"="B) HNB",
+                            "C) Contemporary Natives"="C) CN",
+                            "D) Contemporary Natives + Exotics"="D) CAll")
+
 divII <- split(div, f=div$T0)
 vdivII <- names(divII)
 nrows <- lapply(divII, function(x) {nrow(x)})
@@ -415,23 +424,21 @@ l <- list()
 for (i in 1:nrow(mat.rank.all)){
   ranks <- rank(c(mat.rank.all[i,4], as.vector(as.numeric(mat.rank.all[i,c(5:1003)]))))[1]
   pvals <- ranks/1000
-  l[[i]] <- data.frame(rbind(ranks, pvals))
+  l[[i]] <- data.frame(cbind(ranks, pvals))
 }
+l <- do.call(rbind, l)
+l <- data.frame(mat.rank.all[,c(1:4)], l)
 
+l <- l[!l$T0==1,]
 
+(pvalsAll <- ggplot(l, aes(x=Period, y=pvals, colour=Period)) + 
+    geom_point(alpha=0.2)+
+    theme_bw()+
+    geom_hline(yintercept = 0.025, linetype="dashed")+
+    geom_hline(yintercept = 0.975, linetype="dashed")+
+    geom_hline(yintercept = 0.5, linetype="dashed"))
 
-
-
-
-
-
-mat.rank.all <- split(mat.rank.all, f=rownames(mat.rank.all))
-
-mat.rank.all2 <- lapply(mat.rank.all, function(x) {rank(c(x$F0, x[,c(5:1003)]))})
-
-rank.all <- rank(c(mat.rank.all$F0[1,], mat.rank.all[1,c(5:1003)]))
-
-View(rall_lIII[[1]])
+ggsave(pvalsAll, file= paste0(plot_dir, "/pvals_All.jpg"), width = 12, height = 10) 
 
 
 ###########################################################################################
