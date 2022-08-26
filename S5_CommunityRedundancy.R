@@ -16,6 +16,7 @@ library(factoextra)
 library(ggrepel)
 library(adiv)
 library(mFD)
+library(Rmisc)
 
 rm(list=ls())
 myd <- getwd()
@@ -312,13 +313,126 @@ ggsave(p1, file= paste0(plot_dir, "/Null-ObservedAll.jpg"), width = 12, height =
 ggsave(p2, file= paste0(plot_dir, "/Null-ObservedNatives.jpg"), width = 12, height = 10) 
 
 ###########################################################################################
-# S.E.S. values and the quantile scores
-# Page 126 (135)
-# TBC
+# SES values and quantile scores:----------------------------------------------------------
 
-#RandFD0All_l <- split(RandFD0All, f=RandFD0All$TD0_n)
+# SES:-------------------------------------------------------------------------------------
+# SES > 0 suggests the prevalence of trait divergence patterns
+# SES < 0 suggests the prevalence of trait convergence (REDUNDANCY)
 
- 
+rall_l <- split(RandFD0All, f=RandFD0All$TD0_n)
+rall_l_mean <- lapply(rall_l, function(x) {mean(x$FD0_n)})
+rall_l_sd <- lapply(rall_l, function(x) {sd(x$FD0_n)})
+
+rnat_l <- split(RandFD0Natives, f=RandFD0Natives$TD0_n)
+rnat_l_mean <- lapply(rnat_l, function(x) {mean(x$FD0_n)})
+rnat_l_sd <- lapply(rnat_l, function(x) {sd(x$FD0_n)})
+
+ll <- list(hnc, hnb, contN, contAll)
+ll <- lapply(ll, function(x) {split(x, f=x$T0)})
+vecs <- lapply(ll, function(x) {as.vector(names(x))})
+
+rall_means <- lapply(vecs, function(x) {rall_l_mean[x]})
+rall_sds <- lapply(vecs, function(x) {rall_l_sd[x]})
+
+rnat_means <- lapply(vecs, function(x) {rnat_l_mean[x]})
+rnat_sds <- lapply(vecs, function(x) {rnat_l_sd[x]})
+
+# SES (All species null model)
+ses_results_hnc <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[1]], rall_means[[1]], rall_sds[[1]], SIMPLIFY = FALSE)
+ses_results_hnb <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[2]], rall_means[[2]], rall_sds[[2]], SIMPLIFY = FALSE)
+ses_results_cn <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[3]], rall_means[[3]], rall_sds[[3]], SIMPLIFY = FALSE)
+ses_results_call <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[4]], rall_means[[4]], rall_sds[[4]], SIMPLIFY = FALSE)
+
+
+# SES (Native species null model)
+ses_results_hnc_n <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[1]], rnat_means[[1]], rnat_sds[[1]], SIMPLIFY = FALSE)
+ses_results_hnb_n <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[2]], rnat_means[[2]], rnat_sds[[2]], SIMPLIFY = FALSE)
+ses_results_cn_n <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[3]], rnat_means[[3]], rnat_sds[[3]], SIMPLIFY = FALSE)
+ses_results_call_n <- mapply(function(x,y,z){((x$F0 - y)/z)}, ll[[4]], rnat_means[[4]], rnat_sds[[4]], SIMPLIFY = FALSE)
+
+# Plot:
+ses_results_all <- c(as.vector(unlist(ses_results_hnc)),
+                 as.vector(unlist(ses_results_hnb)),
+                 as.vector(unlist(ses_results_cn)),
+                 as.vector(unlist(ses_results_call)))
+ses_results_nat <- c(as.vector(unlist(ses_results_hnc_n)),
+                     as.vector(unlist(ses_results_hnb_n)),
+                     as.vector(unlist(ses_results_cn_n)),
+                     as.vector(unlist(ses_results_call_n)))
+
+
+period <- rep(c("A) HNC", "B) HNB", "C) CN", "D) CAll"), times=c(67,67,46,53))
+
+ses.dt <- data.frame("Period"=period, "SESAll"=ses_results_all, "SESNat"=ses_results_nat)
+ses.dt$SESAll[is.nan(ses.dt$SESAll)] <- NA
+ses.dt$SESNat[is.nan(ses.dt$SESNat)] <- NA
+
+sum(is.na(ses.dt$SESAll)) #43
+sum(is.na(ses.dt$SESNat)) #43
+
+# https://www.cyclismo.org/tutorial/R/confidence.html
+# 95% confidence interval (normal dis To Be Revised)
+
+summaryAll <- summarySE(ses.dt, measurevar=c("SESAll"), groupvars=c("Period"), na.rm = TRUE)
+summaryNat <- summarySE(ses.dt, measurevar=c("SESNat"), groupvars=c("Period"), na.rm = TRUE)
+
+
+(psesAll <- ggplot(ses.dt, aes(x=Period, y=SESAll, colour=Period)) + 
+  geom_point(alpha=0.2)+
+  geom_point(data=summaryAll, aes(x=Period, y=SESAll, colour=Period), size=2.5)+
+  geom_errorbar(data=summaryAll, aes(ymin=SESAll-ci, ymax=SESAll+ci),
+                width=0.2)+
+  theme_bw()+
+  geom_hline(yintercept = 0, linetype="dashed"))
+
+(psesNat <- ggplot(ses.dt, aes(x=Period, y=SESNat, colour=Period)) + 
+    geom_point(alpha=0.2)+
+    geom_point(data=summaryNat, aes(x=Period, y=SESNat, colour=Period), size=2.5)+
+    geom_errorbar(data=summaryNat, aes(ymin=SESNat-ci, ymax=SESNat+ci),
+                  width=0.2)+
+    theme_bw()+
+    geom_hline(yintercept = 0, linetype="dashed"))
+# Removed 43 rows containing missing values (geom_point), OK
+
+ggsave(psesAll, file= paste0(plot_dir, "/SES_All.jpg"), width = 12, height = 10) 
+ggsave(psesNat, file= paste0(plot_dir, "/SES_Natives.jpg"), width = 12, height = 10) 
+
+
+# Quantile scores:-------------------------------------------------------------------------
+divII <- split(div, f=div$T0)
+vdivII <- names(divII)
+nrows <- lapply(divII, function(x) {nrow(x)})
+
+rall_l2 <- lapply(rall_l, function(x) {x$FD0_n})
+rall_l2 <- rall_l2[vdivII]
+
+rall_l3 <- mapply(function(x,y) {as.data.frame(t(replicate(x, y)))}, nrows,rall_l2, SIMPLIFY = FALSE)
+mat.rank.all <- mapply(function(x,y) {data.frame(cbind(x,y))}, divII, rall_l3, SIMPLIFY = FALSE)
+
+mat.rank.all <- do.call(rbind, mat.rank.all)
+
+l <- list()
+for (i in 1:nrow(mat.rank.all)){
+  ranks <- rank(c(mat.rank.all[i,4], as.vector(as.numeric(mat.rank.all[i,c(5:1003)]))))[1]
+  pvals <- ranks/1000
+  l[[i]] <- data.frame(rbind(ranks, pvals))
+}
+
+
+
+
+
+
+
+
+mat.rank.all <- split(mat.rank.all, f=rownames(mat.rank.all))
+
+mat.rank.all2 <- lapply(mat.rank.all, function(x) {rank(c(x$F0, x[,c(5:1003)]))})
+
+rank.all <- rank(c(mat.rank.all$F0[1,], mat.rank.all[1,c(5:1003)]))
+
+View(rall_lIII[[1]])
+
 
 ###########################################################################################
 # End of script ###########################################################################
