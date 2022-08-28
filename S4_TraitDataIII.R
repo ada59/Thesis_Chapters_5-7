@@ -22,6 +22,7 @@ plot_dir <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange
 load(paste0(myd, "/HNB.RData"))   # Broad Historical Native Assemblage
 load(paste0(myd, "/ContN.RData")) # Contemporary Native Assemblage
 load(paste0(myd, "/ContE.RData")) # Contemporary exotic assemblage
+load(paste0(myd, "/NDT67.RData")) # Double-check translocated species
 
 load("fishtrait_complete_imp.RData")
 tt <- fishtrait_complete_imp
@@ -56,7 +57,9 @@ corrplot(C, method="number", type = "lower", order = "hclust",
 dev.off()
 
 # Most correlations are not significant.
-# The highest is 0.60 between BEl & PFv.
+# The highest positives are 0.51 between BEl & PFv and OGp & REs.
+# The highest negative is -0-48 between MBl and REs.
+# All traits kept.
 
 
 # Create trait distance matrix:------------------------------------------------------------
@@ -69,40 +72,60 @@ save(tt, file="tt.RData")
 
 dist_mat1 <- as.matrix(daisy(tt, metric = "euclidean"))
 dist_mat1 <- (dist_mat1 - min(dist_mat1)) / (max(dist_mat1) - min(dist_mat1)) # Re-scale between 0 & 1
+range(dist_mat1) #OK
 
 save(dist_mat1, file="dist_mat1.RData")
 
-qfsp <- quality.fspaces(as.dist(dist_mat1), deviation_weighting = "absolute", maxdim_pcoa = 6)
+# Assess quality of trait space
+qfsp <- quality.fspaces(as.dist(dist_mat1), deviation_weighting = "absolute", maxdim_pcoa = 10)
 #qfsp <- quality.fspaces(as.dist(dist_mat1), deviation_weighting = "squarred", maxdim_pcoa = 10)
 round(qfsp$quality_fspaces, 3) 
 quality.fspaces.plot(qfsp, "mad", fspaces_plot = rownames(qfsp$quality_fspaces))
 coords_qfsp <- qfsp$details_fspaces$sp_pc_coord #(same output of prcomp)
 
-# NOTE: Quality increases consistently with increasing n? of traits.
+# NOTE: Quality increases consistently with increasing number of traits.
 
-
-# Mapping exotics / natives extirpated & remaining:----------------------------------------
-nat <- sort(unique(names(ContN[,-c(1:2)]))) # 48
+# Classifying species in exotics/natives extirpated/natives remaining (REGIONAL):----------
+nat <- sort(unique(names(ContN[,-c(1:2)]))) # 48 
 nat[nat=="Agonostomus monticola"] <-"Dajaus monticola"
 ext <- sort(unique(setdiff(names(HNB), names(ContN)))) # 30
-int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22 (translocated species not taken into account)
+int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22
+48+22+30 # 100, OK
+
+# Any species translocated?
+intersect(names(ContE), names(HNB))
+
+#View(NDT67) [these are in the exotics column]
+# "Chapalichthys encaustus"
+# "Goodea atripinnis"
+# "Poecilia butleri"
+# "Poecilia sphenops"
+
+intersect(names(ContE), names(HNB)) %in% nat
+intersect(names(ContE), names(HNB)) %in% ext # Chapalichthys encaustus translocate din one site but extipated from its native range?
+
 
 tt$Status <- rep(NA, nrow(tt))
 tt$Status <- ifelse(rownames(tt) %in% nat, "N", tt$Status)
 tt$Status <- ifelse(rownames(tt) %in% ext, "E", tt$Status)
 tt$Status <- ifelse(rownames(tt) %in% int, "I", tt$Status)
+tt$Status <- ifelse(rownames(tt) == "Chapalichthys encaustus", "N", tt$Status) 
+# Chapalichthys encaustus counted as native remaining instead of extirpated since it seems to be translocated in one site
 sum(is.na(tt$Status))
-
+sum(tt$Status=="N") #49
+sum(tt$Status=="E") #29
 
 # PCA:-------------------------------------------------------------------------------------
 PCA <- prcomp(tt[,c(1:10)])
 coords <- PCA$x
 save(coords, file="coords.RData")
 
+#dist_mat2 <- as.matrix(cluster::daisy(coords, metric = "euclidean"))
+#dist_mat2 <- (dist_mat2 - min(dist_mat2)) / (max(dist_mat2) - min(dist_mat2))
+# dist1 and dist2 are the same, OK
+
 # Facto extra (exploration of trait space)
 fviz_eig(PCA)
-#26.6 + 21.5 = 3 48.1 (First two components)
-
 groups <- as.factor(tt$Status)
 
 # Individuals:
@@ -158,7 +181,11 @@ groups <- as.factor(tt$Status)
 
 # Eigenvalues:
 eig.val <- get_eigenvalue(PCA)
-eig.val # Reach > 80% var explained with first five components
+eig.val 
+
+# NOTES:
+# Dim 1 (25.865711) and Dim 2 (20.990517) = 46.87 (~46.9)
+# Reach > 80% var explained with first five components
 
 # Results for Variables
 PCAv <- get_pca_var(PCA)
@@ -167,18 +194,20 @@ PCAv$contrib        # Contributions to the PCs
 PCAv$cos2           # Quality of representation 
 
 # NOTES:
-fviz_contrib(PCA, choice = "var", axes = 1, top = 10) # Body elongation (hydrodynamism) and pectoral fin use for swimming
-# Dim 1:BEl, PFv,  PFs
-# Hydrodynamism and use of pectoral fins
-fviz_contrib(PCA, choice = "var", axes = 2, top = 10) # Visual acuity, maximum body length but also size of mouth and strengh of jaw and hydrodynamism and head size
-# Dim 2:REs, MBl,  RMl, BLs
-# ~Trophic level (predator-prey)
+fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
+# Dim 1: RES, PFv, BEl,  OGp (Visual acuity, use of fin for swimming, hydrodinamism and oral gape position with some effect of body size)
+# Predatory/ non predatory division?
+
+fviz_contrib(PCA, choice = "var", axes = 2, top = 10) 
+# Dim 2: RMl, VEp, BLs (Strength of jae, vertical eye position and shape of body)
+# Could also be another axis of predatory/ non predatory behaviour
+
 fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
-# Dim 3:VEp, OGp,  PFs
+# Dim 3:PFs, VEp, OGp
+
 # Feeding strategy in the water column
 fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
-# Dim 4:CPt(mainly), MBl
-# caudal propulsion efficiency through reduction of drag, swimming mode (also somewhat affected by body size)
+# Dim 4:CPt(mainly), BLs and MBl
 
 # Results for individuals
 PCAi <- get_pca_ind(PCA)
@@ -195,10 +224,6 @@ PCAi$cos2           # Quality of representation
                       ellipse.type = "convex"
 ))
 
-# NOTES:
-# Dim 1: seems to be a distinction in hydrodynamism between introduced and extirpated fish, with remaining natives showing more middle values
-# Dim 2: here natives appear to have slightly more different values than extirpated and introduced fish.
-# PERMANOVAs??
 
 (iIV <- fviz_pca_ind(PCA,
                      axes = c(3,4),
@@ -209,9 +234,6 @@ PCAi$cos2           # Quality of representation
                      ellipse.type = "convex"
 ))
 
-# NOTES:
-# Dim 3: seems to be a distinction in feeding strategy in the water column between introduced and extirpated fish, with remaining natives showing more middle values
-# Dim 4: clear distinction between groups not observed along this dimension
 # PERMANOVAs??
 
 # Save plots: -----------------------------------------------------------------------------

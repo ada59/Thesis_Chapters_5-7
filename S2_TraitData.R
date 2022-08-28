@@ -51,10 +51,11 @@ F_GenusSp <- data.frame(matrix(ncol=17, nrow=7))
 names(F_GenusSp)<- names(FMorphSubs)
 F_GenusSp[,5] <- genus_sp
 
-70 + 23 + 7 # 98, OK. Sourced (with some needing updates) + (to fill) + "genus sp"
+70 + 23 + 7 # 100, OK. Sourced (with some needing updates) + (to fill) + "genus sp"
 
 # Save fishtrait data:
-FMorphSubs$Genus.species <- plyr::revalue(FMorphSubs$Genus.species, c("Tampichthys dichromus"="Tampichthys dichroma"))
+FMorphSubs$Genus.species <- plyr::revalue(FMorphSubs$Genus.species, c("Tampichthys dichromus"="Tampichthys dichroma",
+                                                                      "Agonostomus monticola"="Dajaus monticola"))
 fishtrait <- rbind(FMorphSubs, FMorphFill, F_GenusSp)
 rownames(fishtrait) <- 1:nrow(fishtrait)
 save(fishtrait, file=paste0(myd,"/fishtrait.RData"))              
@@ -68,8 +69,6 @@ save(fishtrait, file=paste0(myd,"/fishtrait.RData"))
 # 2) Fill out missing trait data & update values: -----------------------------------------
 
 # 2A) MBl:
-fishtrait$Genus.species <- plyr::revalue(fishtrait$Genus.species, c("Agonostomus monticola"="Dajaus monticola"))
-
 FB_SpsT <- distinct(species(fishtrait$Genus.species))        
 FB_EstimateT <- distinct(estimate(fishtrait$Genus.species))  
 
@@ -98,14 +97,13 @@ save(BS, file=paste0(myd, "/BS.RData"))
 # Standard length is synonym for "longitud patron, LP" in Miller, 2005
 
 
-# 2B) Update BS measurements:
+# 2B) Updated BS measurements:
 BSU <- read.csv2(paste0(myd, "/BSUpdated.csv"), h=T, sep=";")
 
 identical(sort(unique(BSU$Species)), sort(unique(fishtrait$Genus.species))) # TRUE
 
 # Update MBl values in fishtrait:
 fishtrait$MBl <- BSU$Final[match(as.character(fishtrait$Genus.species), as.character(BSU$Species))]
-
 
 ###########################################################################################
 # 3) Fill out missing species data:
@@ -124,7 +122,7 @@ mes$M <- rep(c("Bl", "Bd", "Hd", "Ed", "CPd", "CFd", "Eh", "Mo", "Jl", "PFh", "P
 
 sum(mes$Length==0)  # 6
 sum(mes$Length <0)  # 0
-mes$Length[mes$Length==0] <- NA # Measurements that could not be taken
+mes$Length[mes$Length==0] <- NA # Mesurements that could not be taken
 sum(is.na(mes$Length))
 
 mes <- mes[c("S", "M", "Length")]
@@ -171,16 +169,15 @@ names(fishtrait_fill)
 gila_mes_mat <- subset(mes_mat, mes_mat$Species %in% c("Gila conspersa", "Gila minaceae", "Gila pulchra"))
 mes_mat <- mes_mat[! mes_mat$Species %in% c("Gila conspersa", "Gila minaceae", "Gila pulchra"),]
 
-fishtrait_fill$BEl <- mes_mat$Bl/mes_mat$Bd
-fishtrait_fill$VEp <- mes_mat$Eh/mes_mat$Bd
-fishtrait_fill$REs <- mes_mat$Ed/mes_mat$Hd
-fishtrait_fill$OGp <- mes_mat$Mo/mes_mat$Bd
-fishtrait_fill$RMl <- mes_mat$Jl/mes_mat$Hd
-fishtrait_fill$BLs <- mes_mat$Hd/mes_mat$Bd
-fishtrait_fill$PFv <- mes_mat$PFiII/mes_mat$Bd #Or PFi
-fishtrait_fill$PFs <- mes_mat$PFh/mes_mat$Bl
-fishtrait_fill$CPt <- mes_mat$CFd/mes_mat$CPd
-
+fishtrait_fill$BEl <- mes_mat$Bl/mes_mat$Bd #Body elongation
+fishtrait_fill$VEp <- mes_mat$Eh/mes_mat$Bd #Verical eye position
+fishtrait_fill$REs <- mes_mat$Ed/mes_mat$Hd #Relative eye size
+fishtrait_fill$OGp <- mes_mat$Mo/mes_mat$Bd #Oral gape position
+fishtrait_fill$RMl <- mes_mat$Jl/mes_mat$Hd #Relative maxillary length
+fishtrait_fill$BLs <- mes_mat$Hd/mes_mat$Bd #Body lateral shape
+fishtrait_fill$PFv <- mes_mat$PFh/mes_mat$Bd #Pectoral fin vertical position
+fishtrait_fill$PFs <- mes_mat$PFiII/mes_mat$Bl #Pectoral fin size
+fishtrait_fill$CPt <- mes_mat$CFd/mes_mat$CPd #Caudal peduncle throttling
 
 save(fishtrait_fill, file="fishtrait_fill.RData")
 
@@ -235,15 +232,15 @@ Gila <- as.data.frame(matrix(ncol=18, nrow=3))
 names(Gila) <- names(fishtrait)
 
 Gila$Genus.species <- gila_mes_mat$Species
-Gila$MBl <- c(16.5, 60, 15.4) # Miller (2005)
+Gila$MBl <- c(16.5, 60, 15.4) # Miller (2005) [cheked values are well assigned]
 Gila$BEl <- gila_mes_mat$Bl/gila_mes_mat$Bd
 Gila$VEp <- gila_mes_mat$Eh/gila_mes_mat$Bd
 Gila$REs <- gila_mes_mat$Ed/gila_mes_mat$Hd
 Gila$OGp <- gila_mes_mat$Mo/gila_mes_mat$Bd
 Gila$RMl <- gila_mes_mat$Jl/gila_mes_mat$Hd
 Gila$BLs <- gila_mes_mat$Hd/gila_mes_mat$Bd
-Gila$PFv <- gila_mes_mat$PFiII/gila_mes_mat$Bd
-Gila$PFs <- gila_mes_mat$PFh/gila_mes_mat$Bl
+Gila$PFv <- gila_mes_mat$PFh/gila_mes_mat$Bd
+Gila$PFs <- gila_mes_mat$PFiII/gila_mes_mat$Bl
 Gila$CPt <- gila_mes_mat$CFd/gila_mes_mat$CPd
 
 Gila_modesta$Genus <- rep("Gila", nrow(Gila_modesta))
