@@ -13,6 +13,7 @@ library(factoextra)
 library(cluster)
 library(corrplot)
 library(mFD)
+library(gridExtra)
 
 rm(list=ls())
 myd <- getwd()
@@ -29,7 +30,7 @@ tt <- fishtrait_complete_imp
 class(tt)
 
 # Correlations & exploration: -------------------------------------------------------------
-cor.mtest <- function(mat, ...) {
+#cor.mtest <- function(mat, ...) {
   mat <- as.matrix(mat)
   n <- ncol(mat)
   p.mat<- matrix(NA, n, n)
@@ -43,20 +44,19 @@ cor.mtest <- function(mat, ...) {
   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
   p.mat
 } # custom function (http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram#data-for-correlation-analysis)
-
+# Other : https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
 C <- cor(tt)
 p.mat <- cor.mtest(tt)
-corrplot(C, method="number", type = "lower", order = "hclust")
 
 file_path <- paste0(myd, "/Plots/Correlation matrix.png")
 png(height=700, width=700, file=file_path)
 
-corrplot(C, method="number", type = "lower", order = "hclust", 
-         p.mat = p.mat, sig.level = 0.01, insig = "blank")
+corrplot(C, method="color", type = "lower", order = "hclust", 
+         p.mat = p.mat$p, sig.level = 0.05, insig = "blank" ,diag=FALSE)$corrPos -> p1
+text(p1$x, p1$y, round(p1$corr, 2))
 
 dev.off()
 
-# Most correlations are not significant.
 # The highest positives are 0.51 between BEl & PFv and OGp & REs.
 # The highest negative is -0-48 between MBl and REs.
 # All traits kept.
@@ -85,7 +85,7 @@ coords_qfsp <- qfsp$details_fspaces$sp_pc_coord #(same output of prcomp)
 
 # NOTE: Quality increases consistently with increasing number of traits.
 
-# Classifying species in exotics/natives extirpated/natives remaining (REGIONAL):----------
+# Classifying species in exotics/natives_extirpated/natives_remaining (REGIONAL):----------
 nat <- sort(unique(names(ContN[,-c(1:2)]))) # 48 
 nat[nat=="Agonostomus monticola"] <-"Dajaus monticola"
 ext <- sort(unique(setdiff(names(HNB), names(ContN)))) # 30
@@ -104,30 +104,27 @@ intersect(names(ContE), names(HNB))
 intersect(names(ContE), names(HNB)) %in% nat
 intersect(names(ContE), names(HNB)) %in% ext # Chapalichthys encaustus translocate din one site but extipated from its native range?
 
-
 tt$Status <- rep(NA, nrow(tt))
-tt$Status <- ifelse(rownames(tt) %in% nat, "N", tt$Status)
-tt$Status <- ifelse(rownames(tt) %in% ext, "E", tt$Status)
-tt$Status <- ifelse(rownames(tt) %in% int, "I", tt$Status)
-tt$Status <- ifelse(rownames(tt) == "Chapalichthys encaustus", "N", tt$Status) 
+tt$Status <- ifelse(rownames(tt) %in% nat, "Native", tt$Status)
+tt$Status <- ifelse(rownames(tt) %in% ext, "Extirpated", tt$Status)
+tt$Status <- ifelse(rownames(tt) %in% int, "Introduced", tt$Status)
+tt$Status <- ifelse(rownames(tt) == "Chapalichthys encaustus", "Native", tt$Status) 
 # Chapalichthys encaustus counted as native remaining instead of extirpated since it seems to be translocated in one site
 sum(is.na(tt$Status))
-sum(tt$Status=="N") #49
-sum(tt$Status=="E") #29
+sum(tt$Status=="Native") #49
+sum(tt$Status=="Extirpated") #29
 
 # PCA:-------------------------------------------------------------------------------------
 PCA <- prcomp(tt[,c(1:10)])
 coords <- PCA$x
+groups <- as.factor(tt$Status)
 save(coords, file="coords.RData")
 
 #dist_mat2 <- as.matrix(cluster::daisy(coords, metric = "euclidean"))
 #dist_mat2 <- (dist_mat2 - min(dist_mat2)) / (max(dist_mat2) - min(dist_mat2))
-# dist1 and dist2 are the same, OK
+#dist1 and dist2 are the same, OK
 
-# Facto extra (exploration of trait space)
-fviz_eig(PCA)
-groups <- as.factor(tt$Status)
-
+# Facto extra (exploration of trait space):------------------------------------------------
 # Individuals:
 (iI <- fviz_pca_ind(PCA,
                    axes = c(1,2),
@@ -146,11 +143,13 @@ groups <- as.factor(tt$Status)
 
 # Variables:
 (vI <- fviz_pca_var(PCA,
+                   title = "Variables-PCA 1-2",
                    col.var = "contrib", # Color by contributions to the PC
                    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
                    repel = TRUE     # Avoid text overlapping
 ))
 (vII <- fviz_pca_var(PCA,
+                    title = "Variables-PCA 3-4",
                     axes = c(3,4),
                     col.var = "contrib", # Color by contributions to the PC
                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
@@ -159,6 +158,7 @@ groups <- as.factor(tt$Status)
 
 # Biplots:
 (bI <- fviz_pca_biplot(PCA, repel = TRUE,
+                      title = "PCA-Biplot 1-2",
                       col.var = "contrib", # Variables color
                       gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
                       col.ind = "#696969",  # Individuals color
@@ -167,7 +167,8 @@ groups <- as.factor(tt$Status)
                       ellipse.alpha = 0.1,
                       ellipse.type = "convex"
 ))
-(bII <- fviz_pca_biplot(PCA, 
+(bII <- fviz_pca_biplot(PCA,
+                       title = "PCA-Biplot 3-4",
                        axes = c(3,4),
                        repel = TRUE,
                        col.var = "contrib", # Variables color
@@ -217,6 +218,7 @@ PCAi$cos2           # Quality of representation
 
 # PLot Individuals (Status):
 (iIII <- fviz_pca_ind(PCA,
+                      title = "Individuals-PCA 1-2 (by Status in 2005)",
                       label = "none", # hide individual labels
                       habillage = tt$Status, # color by groups
                       palette = c("#0072B2", "#F0E442", "Darkgray"),
@@ -226,6 +228,7 @@ PCAi$cos2           # Quality of representation
 
 
 (iIV <- fviz_pca_ind(PCA,
+                     title = "Individuals-PCA 3-4 (by Status in 2005)",
                      axes = c(3,4),
                      label = "none", # hide individual labels
                      habillage = tt$Status, # color by groups
@@ -237,8 +240,10 @@ PCAi$cos2           # Quality of representation
 # PERMANOVAs??
 
 # Save plots: -----------------------------------------------------------------------------
-ggsave(iIII, file= paste0(plot_dir, "/biplot1-2.jpg"), width = 12, height = 10) 
-ggsave(iIV, file= paste0(plot_dir, "/biplot3-4.jpg"), width = 12, height = 10) 
+axes12 <- grid.arrange(vI, iIII, ncol=2)
+axes34 <- grid.arrange(vII, iIV, ncol=2)
+ggsave(axes12, file= paste0(plot_dir, "/biplot1-2.jpg"), width = 15, height = 7) 
+ggsave(axes34, file= paste0(plot_dir, "/biplot3-4.jpg"), width = 15, height = 7) 
 
 ###########################################################################################
 # End of script ###########################################################################
