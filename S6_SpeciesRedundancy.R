@@ -54,9 +54,9 @@ identical(colnames(All), rownames(tt))         # TRUE
 # Uniqueness (regional):------------------------------------------------------------------
 Uii <- uniqueness(All, dist_matrix = dist_mat1)
 
-Ui_dim <- uniqueness_dimensions(All, 
-                                tt,
-                                metric="euclidean")
+#Ui_dim <- uniqueness_dimensions(All, 
+#                                tt,
+#                               metric="euclidean")
 
 
 # Native/Introduced/Remaining
@@ -65,6 +65,8 @@ nat[nat=="Agonostomus monticola"] <-"Dajaus monticola"
 ext <- sort(unique(setdiff(names(HNB), names(ContN)))) # 30
 int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22 (translocated species not taken into account)
 
+nat <- c(nat, "Chapalichthys encaustus")
+ext <- setdiff(ext, "Chapalichthys encaustus")
 
 # All traits:
 Uii$Status <- rep(NA, nrow(Uii))
@@ -77,116 +79,78 @@ Uii$Status <- as.factor(Uii$Status)
 Uii$species <- paste0(substr(Uii$species,1,1), "_",str_split_fixed(Uii$species, " ", 2)[,2])
 
 
-# Trait dimensions:
-Ui_dim$Status <- rep(NA, nrow(Ui_dim))
-Ui_dim$Status <- ifelse(Ui_dim$species %in% nat, "Native Remaining", Ui_dim$Status)
-Ui_dim$Status <- ifelse(Ui_dim$species %in% ext, "Extirpated", Ui_dim$Status)
-Ui_dim$Status <- ifelse(Ui_dim$species %in% int, "Introduced", Ui_dim$Status)
-sum(is.na(Ui_dim$Status))
-Ui_dim$Status <- as.factor(Ui_dim$Status)
-Ui_dim$species <- paste0(substr(Ui_dim$species,1,1), "_",str_split_fixed(Ui_dim$species, " ", 2)[,2])
-Ui_dim <- gather(Ui_dim, key="Trait", value="Ui", -c(1,13))
-
-#Uii$StatusII <- rep("Native", nrow(Uii))
-#Uii$StatusII <- ifelse(Uii$Status %in% "Introduced", "Introduced", Uii$StatusII)
-
-#Uii$StatusIII <- rep("Others", nrow(Uii))
-#Uii$StatusIII <- ifelse(Uii$Status %in% "Extirpated", "Extirpated", Uii$StatusIII)
-
 # Plots:
-(p1 <- ggplot(Uii, aes(x=Ui, y=reorder(species, Ui))) + 
-  geom_point(stat='identity', aes(col=Status), size=4, alpha=0.7)+
-  labs(x="Uniqueness", y="Species")+
-  scale_color_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
-  theme(axis.text = element_text(size = 30))+
-  theme_bw())
+#(p1 <- ggplot(Uii, aes(x=Ui, y=reorder(species, Ui))) + 
+# geom_point(stat='identity', aes(col=Status), size=4, alpha=0.7)+
+#  labs(x="Uniqueness", y="Species")+
+#  scale_color_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
+#  theme(axis.text = element_text(size = 30))+
+# theme_bw())
+
+Uii$Ui <- (Uii$Ui-min(Uii$Ui))/(max(Uii$Ui)-min(Uii$Ui))
 
 (p1bp <- ggplot(Uii,
                 aes(x = Status, y = Ui, fill=Status)) +
-                geom_boxplot() +
+                geom_violin(alpha=0.3) +
+                geom_boxplot(alpha=0.5, width=0.1)+
                 xlab("Status") +
                 ylab("Uniqueness") +
                 scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
                 labs(title = "Regional-level trait rarity (=Uniqueness)")+
                 theme_bw())
 
-#(p2 <- ggplot(Ui_dim, aes(x=Ui, y=reorder(species, Ui))) + 
-#    geom_point(stat='identity', aes(col=Status), size=4, alpha=0.7)+
-#    labs(x="Uniqueness", y="Species")+
-#    scale_color_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
-#    theme(axis.text = element_text(size = 30))+
-#    theme_bw()+
-#    facet_wrap(~Trait))
-
-Ui_dim <- subset(Ui_dim, ! Ui_dim$Trait=="Ui_all")
-(p2bp <- ggplot(Ui_dim,
-               aes(x = Status, y = Ui, fill=Status)) +
-               geom_boxplot() +
-               xlab("Status") +
-               ylab("Uniqueness") +
-               ylim(0,0.1)+
-               scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
-               labs(title = "Regional-level trait rarity (=Uniqueness/Trait)")+
-               theme_bw()+
-               facet_wrap(~Trait))
-# Removed 50 rows containing non-finite values (stat_boxplot).
-
-
-ggsave(p1, file= paste0(plot_dir, "/UniquenessAllSpecies.jpg"), width = 15, height = 15)
-ggsave(p1bp, file= paste0(plot_dir, "/UniquenessAllSpeciesBP.jpg"), width = 10, height = 8)
-ggsave(p2bp, file= paste0(plot_dir, "/UniquenessTraitAllSpeciesBP.jpg"), width = 15, height = 8) # Some extreme values removed (just preliminary overview)
-
+ggsave(p1bp, file= paste0(plot_dir, "/UniquenessAllSpeciesBP.jpg"), width = 9, height = 6)
 
 ###########################################################################################
 # Distinctiveness (local):-----------------------------------------------------------------
 Dii <- distinctiveness(All, dist_matrix = dist_mat1)
+Dii <- as.data.frame(Dii)
 
-hnc <- subset(Dii, rownames(Dii) %like% "HNC")
-hnb <- subset(Dii, rownames(Dii) %like% "HNB")
-contN <- subset(Dii, rownames(Dii) %like% "ContN")
-contAll <- subset(Dii, rownames(Dii) %like% "ContAll")
+Dii$Period <- rep(NA, nrow(Dii))
+Dii$Period <- ifelse(rownames(Dii) %like% "HNC", "A) Historical Conservative", Dii$Period)
+Dii$Period <- ifelse(rownames(Dii) %like% "HNB", "B) Historical Broad", Dii$Period)
+Dii$Period <- ifelse(rownames(Dii) %like% "ContN", "C) Current Natives", Dii$Period)
+Dii$Period <- ifelse(rownames(Dii) %like% "ContAll", "D) Current Natives + Exotics", Dii$Period)
 
-hnb_d <- apply(hnb, 2, mean, na.rm=TRUE)
-sum(is.nan(hnb_d)) # 22 exotics, OK.
-contall_d <- apply(contAll, 2, mean, na.rm=TRUE)
-sum(is.nan(contall_d)) # 30 extirpated, OK
-
-hnb_d_dat <- as.data.frame(hnb_d)
-hnb_d_dat$species <- rownames(hnb_d_dat)
-hnb_d_dat$Period <- rep("A) Historical", nrow(hnb_d_dat))
-names(hnb_d_dat) <- c("Di", "Species", "Period")
-rownames(hnb_d_dat) <- 1:nrow(hnb_d_dat)
-
-contall_d <- as.data.frame(contall_d)
-contall_d$species <- rownames(contall_d)
-contall_d$Period <- rep("B) Contemporary", nrow(contall_d))
-names(contall_d) <- c("Di", "Species", "Period")
-rownames(contall_d) <- 1:nrow(contall_d)
-
-Dii <- as.data.frame(rbind(hnb_d_dat, contall_d))
+Dii <- gather(Dii, key="Species", value="Di", -Period)
+Dii <- Dii[!is.na(Dii$Di),]
 
 Dii$Status <- rep(NA, nrow(Dii))
 Dii$Status <- ifelse(Dii$Species %in% nat, "Native Remaining", Dii$Status)
 Dii$Status <- ifelse(Dii$Species %in% ext, "Extirpated", Dii$Status)
 Dii$Status <- ifelse(Dii$Species %in% int, "Introduced", Dii$Status)
 
+Dii$Species <- as.factor(Dii$Species)
+Dii$Period <- as.factor(Dii$Period)
 Dii$Status <- as.factor(Dii$Status)
 Dii$Species <- paste0(substr(Dii$Species,1,1), "_",str_split_fixed(Dii$Species, " ", 2)[,2])
 
-sum(is.nan(Dii$Di))
-Dii$Di[is.nan(Dii$Di)] <- 0
+DiiII <- subset(Dii, Dii$Period %in% c("B) Historical Broad", "D) Current Natives + Exotics"))
 
-(p3bp <- ggplot(Dii,
-    aes(x = Status, y = Di, fill=Status)) +
-    geom_boxplot() +
-    xlab("Status") +
+(pDii1 <- ggplot(DiiII, aes(y = Di, x = Species, color=Period, fill=Period)) +
+    geom_boxplot(aes(fill=Period))+
+    xlab("Species") +
     ylab("Distinctiveness") +
-    scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
-    labs(title = "Local-level trait rarity (=Distinctiveness)")+
-    theme_bw()+
-    facet_wrap(~Period))
+    labs(title = "Local-level species' trait rarity (=Distinctiveness)")+
+    theme_classic()+
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank())+
+    scale_fill_manual(values=c("#7CAE00", "#C77CFF"))+
+    scale_color_manual(values=c("#7CAE00", "#C77CFF"))+
+    facet_wrap(~Status))
 
-ggsave(p3bp, file= paste0(plot_dir, "/DistinctivenessAllSpeciesBP.jpg"), width = 12, height = 10) # Look C encaustus
+(pDii2 <- ggplot(Dii, aes(y = Di, x = Period, fill=Status, color=Status)) +
+    geom_violin(alpha=0.3) +
+    geom_boxplot(width=0.1, position=position_dodge(1))+
+    xlab("Period") +
+    ylab("Distinctiveness") +
+    labs(title = "Local-level trait rarity (=Distinctiveness)")+
+    scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
+    scale_color_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
+    theme_bw())
+
+ggsave(pDii1, file= paste0(plot_dir, "/DistinctivenessAllSpecies.jpg"), width = 12, height =7) 
+ggsave(pDii2, file= paste0(plot_dir, "/DistinctivenessAllSpecies2.jpg"), width = 10, height = 7) 
 
 ###########################################################################################
 # End of script ###########################################################################
