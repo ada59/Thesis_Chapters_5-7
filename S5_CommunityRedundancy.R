@@ -52,6 +52,10 @@ ContAll$`Poecilia sphenops`<- ContAll$`Poecilia sphenops.x`+ ContAll$`Poecilia s
 ContAll <- ContAll[, ! names(ContAll) %in% c("Goodea atripinnis.x", "Goodea atripinnis.y",
                                             "Poecilia butleri.x", "Poecilia butleri.y",
                                             "Poecilia sphenops.x", "Poecilia sphenops.y")]
+
+sum(is.na(ContAll[,-c(1:2)]))
+ContAll[is.na(ContAll)] <- 0
+sum(is.na(ContAll[,-c(1:2)]))
 save(ContAll, file="ContAll.RData")
 
 l <- bind_rows(HNC, HNB, ContN, ContAll)
