@@ -115,7 +115,8 @@ Dii$Status <- ifelse(Dii$Species %in% int, "Introduced", Dii$Status)
    ylab("Uniqueness") +
    scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
    theme_bw())
-
+Dii$Period <- as.factor(Dii$Period)
+Dii$Period <- recode_factor(Dii$Period, "Historical"="A) Historical", "Current"="B)Current")
 (dviolin <- ggplot(Dii, aes(y = Di, x = Period, fill=Status, color=Status)) +
     geom_point(alpha=0.05, position=position_dodge(1))+
     geom_violin(alpha=0.4) +
@@ -125,7 +126,7 @@ Dii$Status <- ifelse(Dii$Species %in% int, "Introduced", Dii$Status)
     scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
     scale_color_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
     theme_bw())
-
+ggsave(dviolin, filename=paste0(plot_dir, "/dviolin.jpg"), width=10, height=8)
 Dii$StatusII <- ifelse((Dii$Period=="Historical" & Dii$Status =="Native Remaining"),
                      "A) Native Remaining Historical", 
                      Dii$Status)

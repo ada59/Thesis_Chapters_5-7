@@ -92,6 +92,8 @@ ext <- sort(unique(setdiff(names(HNB), names(ContN)))) # 30
 int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22
 48+22+30 # 100, OK
 
+write.csv2(ext, file="ext.csv", row.names = FALSE)
+
 # Any species translocated?
 intersect(names(ContE), names(HNB))
 
@@ -200,7 +202,7 @@ fviz_contrib(PCA, choice = "var", axes = 1, top = 10)
 # Predatory/ non predatory division?
 
 fviz_contrib(PCA, choice = "var", axes = 2, top = 10) 
-# Dim 2: RMl, VEp, BLs (Strength of jae, vertical eye position and shape of body)
+# Dim 2: RMl, VEp, BLs (Strength of jaw, vertical eye position and shape of body)
 # Could also be another axis of predatory/ non predatory behaviour
 
 fviz_contrib(PCA, choice = "var", axes = 3, top = 10)

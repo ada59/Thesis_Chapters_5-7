@@ -101,7 +101,8 @@ divF0d$Period <- str_split_fixed(rownames(divF0d), "_", 2)[,2]
 div <- left_join(divT0d, divF0d, by=c("SiteName", "Period"))
 div$SiteName <- as.factor(div$SiteName)
 div$Period <- as.factor(div$Period)
-names(div) <- c("T0", "SiteName", "Period", "F0")
+div$R0 <- div$V1.x - div$V1.y # at the assemblage level
+names(div) <- c("T0", "SiteName", "Period", "F0", "R0")
 
 ##########################################################################################
 # Observed trends: -----------------------------------------------------------------------
@@ -147,6 +148,39 @@ AIC(contAll_1, contAll_2)
 
 # NOTE:
 # A curve is a better fit in all cases.
+
+# Test the fit in the historical period with the same "contemporary" site subsets.
+hnc2 <- subset(hnc, hnc$SiteName %in% contN$SiteName)
+hnb2 <- subset(hnb, hnb$SiteName %in% contN$SiteName)
+
+hnc3 <- subset(hnc, hnc$SiteName %in% contAll$SiteName)
+hnb3 <- subset(hnb, hnb$SiteName %in% contAll$SiteName)
+
+# Compared to the ContN subset:
+hnc2_1 <- lm(F0 ~ T0, data=hnc2)
+hnc2_2 <- lm(F0 ~ log(T0+1), data=hnc2)
+AIC(hnc2_1, hnc2_2) # Curve is still a better fit
+
+hnb2_1 <- lm(F0 ~ T0, data=hnb2)
+hnb2_2 <- lm(F0 ~ log(T0+1), data=hnb2)
+AIC(hnb2_1, hnb2_2) # Curve is still a better fit
+
+# Compared to the ContAll subset:
+hnc3_1 <- lm(F0 ~ T0, data=hnc3)
+hnc3_2 <- lm(F0 ~ log(T0+1), data=hnc3)
+AIC(hnc3_1, hnc3_2) # Curve is still a better fit
+
+hnb3_1 <- lm(F0 ~ T0, data=hnb3)
+hnb3_2 <- lm(F0 ~ log(T0+1), data=hnb3)
+AIC(hnb3_1, hnb3_2) # Curve is still a better fit
+
+# Save models for exploration:
+model_l <- list("hnc_linear"=hnc_1, "hnc_loglinear"=hnc_2, 
+                "hnb_linear"=hnb_1, "hnb_loglinear"=hnb_2,
+                "contN_linear"=contN_1, "contN_loglinear"=contN_2,
+                "contAll_linear"=contAll_1, "contAll_loglinear"=contAll_2)
+save(model_l, file="model_l.RData")
+
 
 div$Period <- recode_factor(div$Period, HNC  = "A) Historical conservative", 
                                                 HNB = "B) Historical broad",
