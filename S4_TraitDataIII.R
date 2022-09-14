@@ -14,6 +14,11 @@ library(cluster)
 library(corrplot)
 library(mFD)
 library(gridExtra)
+library(fishtree)
+library(taxize)
+library(vegan)
+library(pairwiseAdonis)
+
 
 rm(list=ls())
 myd <- getwd()
@@ -31,24 +36,26 @@ class(tt)
 
 # Correlations & exploration: -------------------------------------------------------------
 #cor.mtest <- function(mat, ...) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat<- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], ...)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-} # custom function (http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram#data-for-correlation-analysis)
+#  mat <- as.matrix(mat)
+#  n <- ncol(mat)
+#  p.mat<- matrix(NA, n, n)
+#  diag(p.mat) <- 0
+#  for (i in 1:(n - 1)) {
+#    for (j in (i + 1):n) {
+#      tmp <- cor.test(mat[, i], mat[, j], ...)
+#      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+#    }
+#  }
+#  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+#  p.mat
+#} 
+# custom function (http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram#data-for-correlation-analysis)
 # Other : https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+
 C <- cor(tt)
 p.mat <- cor.mtest(tt)
 
-file_path <- paste0(myd, "/Plots/Correlation matrix.png")
+file_path <- paste0(plot_dir, "/SM/Correlation matrix.png")
 png(height=700, width=700, file=file_path)
 
 corrplot(C, method="color", type = "lower", order = "hclust", 
@@ -83,7 +90,7 @@ round(qfsp$quality_fspaces, 3)
 quality.fspaces.plot(qfsp, "mad", fspaces_plot = rownames(qfsp$quality_fspaces))
 coords_qfsp <- qfsp$details_fspaces$sp_pc_coord #(same output of prcomp)
 
-# NOTE: Quality increases consistently with increasing number of traits.
+# NOTE: Quality increases consistently with increasing number of summary traits.
 
 # Classifying species in exotics/natives_extirpated/natives_remaining (REGIONAL):----------
 nat <- sort(unique(names(ContN[,-c(1:2)]))) # 48 
@@ -92,19 +99,22 @@ ext <- sort(unique(setdiff(names(HNB), names(ContN)))) # 30
 int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22
 48+22+30 # 100, OK
 
-write.csv2(ext, file="ext.csv", row.names = FALSE)
-
 # Any species translocated?
 intersect(names(ContE), names(HNB))
+"Poecilia mexicana" %in% names(HNB)
+# In NDT67:
+# only as exotic in manantial puerta del río
 
 #View(NDT67) [these are in the exotics column]
 # "Chapalichthys encaustus"
 # "Goodea atripinnis"
 # "Poecilia butleri"
 # "Poecilia sphenops"
+# In paper, Poecilia mexicana & Chirostoma chapalae also mentioned.
 
 intersect(names(ContE), names(HNB)) %in% nat
-intersect(names(ContE), names(HNB)) %in% ext # Chapalichthys encaustus translocate din one site but extipated from its native range?
+intersect(names(ContE), names(HNB)) %in% ext 
+# Chapalichthys encaustus translocated in one site but extipated from its native range
 
 tt$Status <- rep(NA, nrow(tt))
 tt$Status <- ifelse(rownames(tt) %in% nat, "Native", tt$Status)
@@ -116,6 +126,69 @@ sum(is.na(tt$Status))
 sum(tt$Status=="Native") #49
 sum(tt$Status=="Extirpated") #29
 
+# Classifying introduced species according to source:--------------------------------------
+# int (= exotic component)
+# Sources from Gesundheit & Macias Garcia, 2018.
+
+# 1 : Aquaculture
+# 2: Sportfishing
+# 3: Aquarium trade
+# 4: Contaminants in aquaculture or other source
+
+tt$Source <- rep(NA, nrow(tt))
+tt$Source <- ifelse(rownames(tt) %in% c("Oreochromis sp", "Oreochromis mossambicus",
+                                        "Oreochromis aureus", "Oreochromis niloticus"), "1", tt$Source)
+tt$Source <- ifelse(rownames(tt) %in% c("Cyprinus carpio", "Lepomis macrochirus",
+                                        "Micropterus salmoides"), "1/2", tt$Source)
+tt$Source <- ifelse(rownames(tt) %in% c("Pomoxis nigromaculatus"), "2", tt$Source)
+tt$Source <- ifelse(rownames(tt) %in% c("Amatitlania nigrofasciata",
+                                        "Astatotilapia burtoni"), "3", tt$Source)
+tt$Source <- ifelse(rownames(tt) %in% c("Pseudoxiphophorus bimaculatus",
+                                        "Pseudoxiphophorus jonesii",
+                                        "Gambusia yucatana",
+                                        "Poeciliopsis gracilis",
+                                        "Pseudoxiphophorus sp",
+                                        "Poeciliopsis sp",
+                                        "Poecilia mexicana"), "4", tt$Source)
+tt$Source <- ifelse(rownames(tt) %in% c("Xiphophorus hellerii",
+                                        "Poecilia reticulata",
+                                        "Xiphophorus maculatus",
+                                        "Xiphophorus variatus",
+                                        "Poecilia sp"), "3/4", tt$Source)
+# Poeciliopsis sp" /"Poecilia sp" /"Pseudoxiphophorus sp"  added following sps classification
+sum(is.na(tt$Source))
+tt$Source <- ifelse(is.na(tt$Source), tt$Status, tt$Source)
+
+tt$SourceII <- rep(NA, nrow(tt))
+tt$SourceII <- ifelse(tt$Source %in% c("1", "2", "1/2"), "Aquaculture&Sportfishing", tt$SourceII)
+tt$SourceII <- ifelse(tt$Source %in% c("3", "4", "3/4"), "Aquarium&Contaminant", tt$SourceII)
+sum(is.na(tt$SourceII))
+tt$SourceII <- ifelse(is.na(tt$SourceII), tt$Status, tt$SourceII)
+
+# Classifying species according to their phylogeny:----------------------------------------
+example <- c("Poecilia sphenops", "Cyprinus carpio")
+exampled_df <- tax_name(example, get = c('family', "genus"), db = 'ncbi')
+
+tt$Family <- rep(NA, nrow(tt))
+tt$Family <- tax_name(rownames(tt), get = "family", db = "ncbi")$family
+
+sum(is.na(tt$Family)) # 14
+rownames(tt)[is.na(tt$Family)]
+
+tt$Family <- ifelse(rownames(tt) %in% c("Chirostoma aculeatum",
+                                        "Chirostoma charari",
+                                        "Chirostoma sp"), "Atherinopsidae", tt$Family) # FishBase
+tt$Family <- ifelse(rownames(tt) %in% c("Sicydium multipunctatum"), "Gobiidae", tt$Family) # FishBase
+tt$Family <- ifelse(rownames(tt) %in% c("Gila sp", "Tampichthys dichroma", "Algansea popoche"), "Leuciscidae", tt$Family) # FishBase
+tt$Family <- ifelse(rownames(tt) %in% c("Gambusia senilis",
+                                        "Poecilia sp",
+                                        "Poeciliopsis sp",
+                                        "Pseudoxiphophorus sp"), "Poeciliidae", tt$Family) # FishBase
+tt$Family <- ifelse(rownames(tt) %in% c("Oreochromis sp", "Nosferatu labridens"), "Cichlidae", tt$Family)
+tt$Family <- ifelse(rownames(tt) %in% c("Astyanax sp"), "Characidae", tt$Family)
+sum(is.na(tt$Family))
+
+###########################################################################################
 # PCA:-------------------------------------------------------------------------------------
 PCA <- prcomp(tt[,c(1:10)])
 coords <- PCA$x
@@ -126,22 +199,22 @@ save(coords, file="coords.RData")
 #dist_mat2 <- (dist_mat2 - min(dist_mat2)) / (max(dist_mat2) - min(dist_mat2))
 #dist1 and dist2 are the same, OK
 
+###########################################################################################
 # Facto extra (exploration of trait space):------------------------------------------------
 # Individuals:
 (iI <- fviz_pca_ind(PCA,
-                   axes = c(1,2),
-                   col.ind = "cos2", # Color by the quality of representation
-                   gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
-                   repel = TRUE
+                    axes = c(1,2),
+                    col.ind = "cos2", # Color by the quality of representation
+                    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+                    repel = TRUE
 ))
 
 (iII <- fviz_pca_ind(PCA,
-                    axes = c(3,4),
-                    col.ind = "cos2", # Color by the quality of representation
-                    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
-                    repel = TRUE     # Avoid text overlapping
+                     axes = c(3,4),
+                     col.ind = "cos2", # Color by the quality of representation
+                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+                     repel = TRUE     # Avoid text overlapping
 ))
-
 
 # Variables:
 (vI <- fviz_pca_var(PCA,
@@ -157,6 +230,9 @@ save(coords, file="coords.RData")
                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
                     repel = TRUE     # Avoid text overlapping
 ))
+
+ggsave(vI, filename = paste0(plot_dir, "/SM/FactoExtra/variables_12.jpg"), width=8, height=8)
+ggsave(vII, filename = paste0(plot_dir, "/SM/FactoExtra/variables_34.jpg"), width=8, height=8)
 
 # Biplots:
 (bI <- fviz_pca_biplot(PCA, repel = TRUE,
@@ -182,12 +258,17 @@ save(coords, file="coords.RData")
                        ellipse.type = "convex"
 ))
 
+ggsave(bI, filename = paste0(plot_dir, "/SM/FactoExtra/biplot_12.jpg"), width=8, height=8)
+ggsave(bII, filename = paste0(plot_dir, "/SM/FactoExtra/biplot_34.jpg"), width=8, height=8)
+
+
 # Eigenvalues:
 eig.val <- get_eigenvalue(PCA)
 eig.val 
 
 # NOTES:
 # Dim 1 (25.865711) and Dim 2 (20.990517) = 46.87 (~46.9)
+# Reach > 70% variance explained with first four components
 # Reach > 80% var explained with first five components
 
 # Results for Variables
@@ -197,20 +278,22 @@ PCAv$contrib        # Contributions to the PCs
 PCAv$cos2           # Quality of representation 
 
 # NOTES:
-fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
-# Dim 1: RES, PFv, BEl,  OGp (Visual acuity, use of fin for swimming, hydrodinamism and oral gape position with some effect of body size)
-# Predatory/ non predatory division?
+c1 <- fviz_contrib(PCA, choice = "var", axes = 1, top = 10) 
+# Dim 1: RES, PFv, BEl,  OGp (Visual acuity, use of fin for swimming, hydrodinamism and oral gape position)
 
-fviz_contrib(PCA, choice = "var", axes = 2, top = 10) 
+c2 <- fviz_contrib(PCA, choice = "var", axes = 2, top = 10) 
 # Dim 2: RMl, VEp, BLs (Strength of jaw, vertical eye position and shape of body)
-# Could also be another axis of predatory/ non predatory behaviour
 
-fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
+c3 <- fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
 # Dim 3:PFs, VEp, OGp
 
 # Feeding strategy in the water column
-fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
+c4 <- fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
 # Dim 4:CPt(mainly), BLs and MBl
+
+
+contrib <- grid.arrange(c1, c2, c3, c4)
+ggsave(contrib, filename=paste0(plot_dir, "/SM/FactoExtra/ContributionsTraits.jpg"), width=10, height = 8)
 
 # Results for individuals
 PCAi <- get_pca_ind(PCA)
@@ -218,8 +301,9 @@ PCAi$coord          # Coordinates
 PCAi$contrib        # Contributions to the PCs
 PCAi$cos2           # Quality of representation 
 
-# PLot Individuals (Status):
-(iIII <- fviz_pca_ind(PCA,
+###########################################################################################
+# Plots to save : -------------------------------------------------------------------------
+(iA <- fviz_pca_ind(PCA,
                       title = "Individuals-PCA 1-2 (by Status in 2005)",
                       label = "none", # hide individual labels
                       habillage = tt$Status, # color by groups
@@ -227,9 +311,32 @@ PCAi$cos2           # Quality of representation
                       addEllipses = TRUE, # TRUE for concentration ellipses
                       ellipse.type = "convex"
 ))
+(iB <- fviz_pca_ind(PCA,
+                      title = "Individuals-PCA 1-2 (by Source in 2005)",
+                      label = "none", # hide individual labels
+                      habillage = tt$SourceII, # color by groups
+                      #palette = c("#0072B2", "#F0E442", "Darkgray"),
+                      addEllipses = TRUE, # TRUE for concentration ellipses
+                      ellipse.type = "convex"
+))
+(iC <- fviz_pca_ind(PCA,
+                    title = "Individuals-PCA 1-2 (by Family in 2005)",
+                    label = "none", # hide individual labels
+                    habillage = tt$Family, # color by groups
+                    #palette = c("#0072B2", "#F0E442", "Darkgray"),
+                    addEllipses = TRUE, # TRUE for concentration ellipses
+                    ellipse.type = "convex"
+))
+(iD <- fviz_pca_ind(PCA,
+                    title = "Individuals-PCA 1-2 (by SourceII in 2005)",
+                    label = "none", # hide individual labels
+                    habillage = tt$Source, # color by groups
+                    #palette = c("#0072B2", "#F0E442", "Darkgray"),
+                    addEllipses = TRUE, # TRUE for concentration ellipses
+                    ellipse.type = "convex"
+))
 
-
-(iIV <- fviz_pca_ind(PCA,
+(i2A <- fviz_pca_ind(PCA,
                      title = "Individuals-PCA 3-4 (by Status in 2005)",
                      axes = c(3,4),
                      label = "none", # hide individual labels
@@ -238,14 +345,70 @@ PCAi$cos2           # Quality of representation
                      addEllipses = TRUE, # TRUE for concentration ellipses
                      ellipse.type = "convex"
 ))
-
-# PERMANOVAs??
+(i2B <- fviz_pca_ind(PCA,
+                     title = "Individuals-PCA 3-4 (by Source in 2005)",
+                     axes = c(3,4),
+                     label = "none", # hide individual labels
+                     habillage = tt$SourceII, # color by groups
+                     #palette = c("#0072B2", "#F0E442", "Darkgray"),
+                     addEllipses = TRUE, # TRUE for concentration ellipses
+                     ellipse.type = "convex"
+))
+(i2C <- fviz_pca_ind(PCA,
+                     title = "Individuals-PCA 3-4 (by Family in 2005)",
+                     axes = c(3,4),
+                     label = "none", # hide individual labels
+                     habillage = tt$Family, # color by groups
+                     #palette = c("#0072B2", "#F0E442", "Darkgray"),
+                     addEllipses = TRUE, # TRUE for concentration ellipses
+                     ellipse.type = "convex"
+))
+(i2D <- fviz_pca_ind(PCA,
+                     title = "Individuals-PCA 3-4 (by SourceII in 2005)",
+                     axes = c(3,4),
+                     label = "none", # hide individual labels
+                     habillage = tt$Source, # color by groups
+                     #palette = c("#0072B2", "#F0E442", "Darkgray"),
+                     addEllipses = TRUE, # TRUE for concentration ellipses
+                     ellipse.type = "convex"
+))
 
 # Save plots: -----------------------------------------------------------------------------
-axes12 <- grid.arrange(vI, iIII, ncol=2)
-axes34 <- grid.arrange(vII, iIV, ncol=2)
-ggsave(axes12, file= paste0(plot_dir, "/biplot1-2.jpg"), width = 15, height = 7) 
-ggsave(axes34, file= paste0(plot_dir, "/biplot3-4.jpg"), width = 15, height = 7) 
+groups12 <- grid.arrange(iA, iB, ncol=2)
+ggsave(groups12, filename= paste0(plot_dir, "/SM/FactoExtra/habillageStatus&Source12.jpg"), width = 16, height = 8) 
+
+groups34 <- grid.arrange(i2A, i2B, ncol=2)
+ggsave(groups34, filename= paste0(plot_dir, "/SM/FactoExtra/habillageStatus&Source34.jpg"), width = 16, height = 8) 
+
+ggsave(iC, filename= paste0(plot_dir, "/SM/FactoExtra/habillageFamily12.jpg"), width = 8, height = 8) 
+
+ggsave(i2C, filename= paste0(plot_dir, "/SM/FactoExtra/habillageFamily34.jpg"), width = 8, height = 8) 
+
+###########################################################################################
+# PERMANOVA:-------------------------------------------------------------------------------
+# Used to compare groups of objects and test the null hypothesis 
+# that the centroids and dispersion of the groups as defined 
+# by measure space are equivalent for all groups.
+
+identical(colnames(dist_mat1), rownames(tt)) #TRUE
+grouping <- as.factor(tt$Status)
+
+adonis(dist_mat1~grouping) # adonis 2?
+adonis(coords~grouping, method = "euclidean")
+
+# R-squared of 0.089*100= 8.9%
+pairwise.adonis(coords, grouping, sim.function='vegdist',sim.method='euclidian')
+
+
+grouping2 <- as.factor(tt$SourceII)
+
+adonis(dist_mat1~grouping2) # adonis 2?
+adonis(coords~grouping2, method = "euclidean")
+
+# R-squared of 0.17439*100= 17.43%
+pairwise.adonis(coords, grouping2, sim.function='vegdist',sim.method='euclidian')
+# OK, so overall we see that the group Aquaculture&Sportfishing is the most
+# different in composition. (But sample size)
 
 ###########################################################################################
 # End of script ###########################################################################
