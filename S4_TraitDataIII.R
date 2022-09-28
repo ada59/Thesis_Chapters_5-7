@@ -188,6 +188,8 @@ tt$Family <- ifelse(rownames(tt) %in% c("Oreochromis sp", "Nosferatu labridens")
 tt$Family <- ifelse(rownames(tt) %in% c("Astyanax sp"), "Characidae", tt$Family)
 sum(is.na(tt$Family))
 
+tt2 <- tt
+save(tt2, file="tt2.RData")
 ###########################################################################################
 # PCA:-------------------------------------------------------------------------------------
 PCA <- prcomp(tt[,c(1:10)])
@@ -409,6 +411,39 @@ adonis(coords~grouping2, method = "euclidean")
 pairwise.adonis(coords, grouping2, sim.function='vegdist',sim.method='euclidian')
 # OK, so overall we see that the group Aquaculture&Sportfishing is the most
 # different in composition. (But sample size)
+
+# ANOVA:------------------------------------------------------------------------------------
+coords2 <- data.frame(coords, tt$Status, tt$SourceII)
+coords2$tt.Status <- as.factor(coords2$tt.Status)
+coords2$tt.SourceII <- as.factor(coords2$tt.SourceII)
+
+mod1_dim1 <- lm(PC1~tt$Status, data=coords2)
+mod2_dim1 <- aov(PC1~tt$Status, data=coords2)
+summary(mod1_dim1)
+summary(mod2_dim1)
+anova(mod1_dim1)
+anova(mod2_dim1)
+TukeyHSD(mod2_dim1)
+
+mod1_dim2 <- lm(PC2~tt$Status, data=coords2)
+mod2_dim2 <- aov(PC2~tt$Status, data=coords2)
+summary(mod1_dim2)
+summary(mod2_dim2)
+anova(mod1_dim2)
+anova(mod2_dim2)
+TukeyHSD(mod2_dim2)
+
+mod1_dim3 <- lm(PC3~tt$Status, data=coords2)
+mod2_dim3 <- aov(PC3~tt$Status, data=coords2)
+summary(mod1_dim3) #  0.1564 
+summary(mod2_dim3)
+anova(mod1_dim3)
+anova(mod2_dim3)
+TukeyHSD(mod2_dim3)
+
+dim4 <- lm(PC4~tt$Status, data=coords2)
+plot(dim1)
+summary(dim4)
 
 ###########################################################################################
 # End of script ###########################################################################
