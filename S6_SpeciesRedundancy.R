@@ -12,6 +12,7 @@ library(stringr)
 library(mFD)
 library(funrar)
 library(data.table)
+library(car)
 
 rm(list=ls())
 myd <- getwd()
@@ -26,7 +27,7 @@ load(paste0(myd, "/ContAll.RData")) # Contemporary Native + Exotic assemblage
 load(paste0(myd, "/All.RData"))     # All Data
 
 load(paste0(myd, "/dist_mat1.RData"))  # Species x species distance matrix
-load(paste0(myd, "/tt.RData"))         # Species x trait matrix
+load(paste0(myd, "/tt2.RData"))         # Species x trait matrix (Status, Source, Family)
 
 # Format community data: -----------------------------------------------------------------
 HNB$Period <- rep("HNB", nrow(HNB))
@@ -43,9 +44,9 @@ dt <- dt[,order(colnames(dt))]
 dist_mat1 <- dist_mat1[order(rownames(dist_mat1)), order(colnames(dist_mat1))]
 
 
-tt <- tt[order(rownames(tt)),]
+tt <- tt2[order(rownames(tt2)),]
 identical(colnames(dt), colnames(dist_mat1))  # TRUE
-identical(colnames(dt), rownames(tt))         # TRUE
+identical(colnames(dt), rownames(tt2))        # TRUE
 
 ###########################################################################################
 # Trait rarity measures:-------------------------------------------------------------------
@@ -53,14 +54,14 @@ identical(colnames(dt), rownames(tt))         # TRUE
 Uii <- uniqueness(dt, dist_matrix = dist_mat1) # uniqueness
 Uii$Ui <- (Uii$Ui-min(Uii$Ui))/(max(Uii$Ui)-min(Uii$Ui)) # normalise
 Ui_dim <- uniqueness_dimensions(dt, 
-                                tt,
+                                tt2[,c(1:10)],
                                 metric="euclidean") 
 
 
-Dii <- distinctiveness(dt, dist_matrix = dist_mat1) #distinctivenss
+Dii <- distinctiveness(dt, dist_matrix = dist_mat1) # distinctiveness
 Dii <- as.data.frame(Dii)
 Di_dim <- distinctiveness_dimensions(dt, 
-                                     tt,
+                                     tt2[,c(1:10)],
                                      metric="euclidean") 
 
 Dii$Period <- rep(NA, nrow(Dii))
@@ -75,39 +76,21 @@ setdiff(unique(colnames(dt)), unique(Dii$Species))
 # "Gambusia yucatana" (it means, this species only appears in coms of richness = 1)
 # Distinctiveness of this taxon cannot be calculated.
 
-
 ###########################################################################################
 # Period & status -------------------------------------------------------------------------
-nat <- sort(unique(names(ContN[,-c(1:2)]))) # 48
-nat[nat=="Agonostomus monticola"] <-"Dajaus monticola"
-ext <- sort(unique(setdiff(names(HNB), names(ContN)))) # 30
-int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22 (translocated species not taken into account)
-
-nat <- c(nat, "Chapalichthys encaustus")
-ext <- setdiff(ext, "Chapalichthys encaustus")
-
-Uii$Status <- rep(NA, nrow(Uii))
-Uii$Status <- ifelse(Uii$species %in% nat, "Native Remaining", Uii$Status)
-Uii$Status <- ifelse(Uii$species %in% ext, "Extirpated", Uii$Status)
-Uii$Status <- ifelse(Uii$species %in% int, "Introduced", Uii$Status)
-sum(is.na(Uii$Status))
-Uii$Status <- as.factor(Uii$Status)
-
-Dii$Status <- rep(NA, nrow(Dii))
-Dii$Status <- ifelse(Dii$Species %in% nat, "Native Remaining", Dii$Status)
-Dii$Status <- ifelse(Dii$Species %in% ext, "Extirpated", Dii$Status)
-Dii$Status <- ifelse(Dii$Species %in% int, "Introduced", Dii$Status)
+Uii$Status <- tt2$Status[match(Uii$species, rownames(tt2))]
+Uii$SourceII <- tt2$SourceII[match(Uii$species, rownames(tt2))]
 
 #Dii$Period <- as.factor(Dii$Period)
 #Dii$Status <- as.factor(Dii$Status)
 #Dii$Species <- paste0(substr(Dii$Species,1,1), "_",str_split_fixed(Dii$Species, " ", 2)[,2])
 
 ###########################################################################################
-# Plots -----------------------------------------------------------------------------------
+# Plots Uniqueness ------------------------------------------------------------------------
 
 # Violin plots:
 
-(uviolin <- ggplot(Uii,aes(x = Status, y = Ui, fill=Status)) +
+(uviolin <- ggplot(Uii, aes(x = Status, y = Ui, fill=Status)) +
    geom_point(alpha=0.3)+
    geom_violin(alpha=0.4) +
    geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
@@ -115,35 +98,117 @@ Dii$Status <- ifelse(Dii$Species %in% int, "Introduced", Dii$Status)
    ylab("Uniqueness") +
    scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
    theme_bw())
-Dii$Period <- as.factor(Dii$Period)
-Dii$Period <- recode_factor(Dii$Period, "Historical"="A) Historical", "Current"="B)Current")
-(dviolin <- ggplot(Dii, aes(y = Di, x = Period, fill=Status, color=Status)) +
-    geom_point(alpha=0.05, position=position_dodge(1))+
+
+(uviolin2 <- ggplot(Uii, aes(x = SourceII, y = Ui, fill=SourceII)) +
+    geom_point(alpha=0.3)+
     geom_violin(alpha=0.4) +
     geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-    xlab("Period") +
+    xlab("Status") +
+    ylab("Uniqueness") +
+    #scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
+    theme_bw())
+
+ggsave(uviolin, filename= paste0(plot_dir, "/UniquenessStatus.jpg"), width = 7, height = 5) 
+ggsave(uviolin2, filename= paste0(plot_dir, "/UniquenessSource.jpg"), width = 9, height = 5) 
+
+###########################################################################################
+# ANOVAs ----------------------------------------------------------------------------------
+
+Uii$Status <- as.factor(Uii$Status)
+Uii$SourceII <- as.factor(Uii$SourceII)
+sum(is.na(Uii))
+
+Uii_fit1 <- aov(Ui ~ Status, data=Uii)
+summary(Uii_fit1)
+anova(Uii_fit1)
+TukeyHSD(Uii_fit1)
+
+Uii_fit2 <- aov(Ui ~ SourceII, data=Uii)
+summary(Uii_fit2)
+anova(Uii_fit2)
+TukeyHSD(Uii_fit2)
+
+
+###########################################################################################
+# Plots Distinctiveness -------------------------------------------------------------------
+
+Dii$Period <- as.factor(Dii$Period)
+Dii$Period <- recode_factor(Dii$Period, "Historical"="A) Historical", "Current"="B)Current")
+
+
+Dii$Status <- tt2$Status[match(Dii$Species, rownames(tt2))]
+Dii$SourceII <- tt2$SourceII[match(Dii$Species, rownames(tt2))]
+
+(dviolin <- ggplot(Dii, aes(y = Di, x = Status)) +
+    geom_point(alpha=0.05, position=position_dodge(1))+
+    geom_violin(aes(fill = Status), alpha=0.4) +
+    geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
+    xlab("Status") +
     ylab("Distinctiveness") +
     scale_fill_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
-    scale_color_manual(values=c("#0072B2", "#F0E442", "Darkgray"))+
     theme_bw())
-ggsave(dviolin, filename=paste0(plot_dir, "/dviolin.jpg"), width=10, height=8)
-Dii$StatusII <- ifelse((Dii$Period=="Historical" & Dii$Status =="Native Remaining"),
+
+(dviolin2 <- ggplot(Dii, aes(y = Di, x = SourceII)) +
+    geom_point(alpha=0.05, position=position_dodge(1))+
+    geom_violin(aes(fill = SourceII), alpha=0.4) +
+    geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
+    xlab("Source") +
+    ylab("Distinctiveness") +
+    theme_bw())
+
+ggsave(dviolin, filename= paste0(plot_dir, "/DisctinctivenessStatus.jpg"), width = 7, height = 5) 
+ggsave(dviolin2, filename= paste0(plot_dir, "/DisctinctivenessSourceII.jpg"), width = 9, height = 5) 
+
+
+
+Dii$StatusII <- ifelse((Dii$Period=="A) Historical" & Dii$Status =="Native"),
                      "A) Native Remaining Historical", 
                      Dii$Status)
-Dii$StatusII <- recode_factor(as.factor(Dii$StatusI), 
+Dii$StatusII <- recode_factor(as.factor(Dii$StatusII), 
                               "A) Native Remaining Historical"="A) Native Remaining Historical",
-                              "Native Remaining" = "B) Native Remaining Current",
+                              "Native" = "B) Native Remaining Current",
                               "Extirpated"= "C) Extirpated",
                               "Introduced" = "D) Introduced")
 
-(dviolinII <- ggplot(Dii,aes(x = StatusII, y = Di, fill=StatusII)) +
+Dii_nat <- subset(Dii, Dii$StatusII %in% c("A) Native Remaining Historical",
+                                           "B) Native Remaining Current"))
+
+(dviolinNat <- ggplot(Dii_nat, aes(x = StatusII, y = Di, fill=StatusII)) +
     geom_point(alpha=0.3)+
     geom_violin(alpha=0.4) +
     geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
     xlab("StatusII") +
     ylab("Distinctiveness") +
-    scale_fill_manual(values=c("Lightgray", "Darkgray", "#0072B2", "#F0E442"))+
+    scale_fill_manual(values=c("Lightgray", "Darkgray"))+
     theme_bw())
+
+
+ggsave(dviolinNat, filename= paste0(plot_dir, "/DisctinctivenessNativeRemaining.jpg"), width = 8, height = 5) 
+
+
+###########################################################################################
+# ANOVAs ----------------------------------------------------------------------------------
+str(Dii)
+Dii_means <- Dii %>%
+  group_by(Species, Status, SourceII) %>%
+  summarise(mean=mean(Di))
+
+Dii_means$Status <- as.factor(Dii_means$Status)
+Dii_means$SourceII <- as.factor(Dii_means$SourceII)
+sum(is.na(Dii_means$mean)) #0
+
+Dii_fit1 <- aov(mean ~ Status, data=Dii_means)
+summary(Dii_fit1)
+TukeyHSD(Dii_fit1)
+
+Dii_fit2 <- aov(mean ~ SourceII, data=Dii_means)
+summary(Dii_fit2)
+TukeyHSD(Dii_fit2)
+
+###########################################################################################
+# Correlations ----------------------------------------------------------------------------
+
+cor()
 
 
 # Point plots:

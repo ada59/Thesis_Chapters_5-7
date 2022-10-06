@@ -1,5 +1,5 @@
 ###########################################################################################
-# Script: Observed trait redundancy and temporal change
+# Script: Observed vs null trait diversity & redundancy and temporal change
 # AFE
 # August/Sept 2022
 ###########################################################################################
@@ -30,8 +30,8 @@ load(paste0(myd, "/HNC.RData"))   # Conservative Historical Native Assemblage
 load(paste0(myd, "/HNB.RData"))   # Broad Historical Native Assemblage
 load(paste0(myd, "/ContN.RData")) # Contemporary Native Assemblage
 load(paste0(myd, "/ContE.RData")) # Contemporary Exotic assemblage
-
 load(paste0(myd, "/dist_mat1.RData"))  # Trait distance matrix
+
 
 # Functions:------------------------------------------------------------------------------
 # FD and TD (Hill numbers) use the same units and TD is always greater than or equal to FD
@@ -90,8 +90,8 @@ ls <- lapply(ls, function(x) {as.vector(as.matrix(x))})
 
 ##########################################################################################
 # Observed TD and FD: --------------------------------------------------------------------
-divT0 <- lapply(ls, function(x) {FD_MLE(x, dist_mat1, min(dist_mat1[dist_mat1>0]), 0)})
-divF0 <- lapply(ls, function(x) {FD_MLE(x, dist_mat1, mean(dist_mat1[dist_mat1>0]), 0)})
+divT0 <- lapply(ls, function(x) {FD_MLE(x, dist_mat1, min(dist_mat1[dist_mat1>0]), 0)}) # taxonomic diversity
+divF0 <- lapply(ls, function(x) {FD_MLE(x, dist_mat1, mean(dist_mat1[dist_mat1>0]), 0)}) # trait diversity
 
 divT0d <- as.data.frame(do.call(rbind, divT0))
 divT0d$SiteName <- str_split_fixed(rownames(divT0d), "_", 2)[,1]
@@ -102,13 +102,14 @@ divF0d$SiteName <- str_split_fixed(rownames(divF0d), "_", 2)[,1]
 divF0d$Period <- str_split_fixed(rownames(divF0d), "_", 2)[,2]
 
 div <- left_join(divT0d, divF0d, by=c("SiteName", "Period"))
+names(div) <- c("T0", "SiteName", "Period", "F0")
+div <- div %>% relocate(T0, .after = Period)
+str(div)
+
 div$SiteName <- as.factor(div$SiteName)
 div$Period <- as.factor(div$Period)
-names(div) <- c("T0", "SiteName", "Period", "F0")
 
-##########################################################################################
-#------------------------------------- TRAIT DIVERSITY -----------------------------------
-##########################################################################################
+div$R0 <- div$T0-div$F0 # trait redundancy
 
 ##########################################################################################
 # Observed trends: -----------------------------------------------------------------------
@@ -119,6 +120,16 @@ hnb <- subset(div2, div2$Period=="HNB")
 contN <- subset(div2, div2$Period=="ContN")
 contAll <- subset(div2, div2$Period=="ContAll")
 
+# Relationship between T0 & Period:-------------------------------------------------------
+str(div2)
+div2_1T0 <- lm(T0 ~ Period, data=div2)
+summary(div2_1T0)
+
+div2B <- subset(div2, div2$Period %in% c("HNB", "ContAll"))
+div2_2T0 <- lm(T0 ~ Period, data=div2B)
+summary(div2_2T0)
+
+# Relationship between T0 & F0:-----------------------------------------------------------
 # Historical conservative:----------------------------------------------------------------
 hnc_1 <- lm(F0 ~ T0, data=hnc)
 hnc_2 <- lm(F0 ~ log(T0+1), data=hnc)
@@ -139,7 +150,15 @@ AIC(contN_1, contN_2)
 
 # Current All:----------------------------------------------------------------------------
 contAll_1 <- lm(F0 ~ T0, data=contAll)
+summary(conAll_1)
 contAll_2 <- lm(F0 ~ log(T0+1), data=contAll)
+summary(conAll_2)
+
+par(mfrow=c(2,2))
+plot(contAll_1)
+
+par(mfrow=c(2,2))
+plot(contAll_2)
 
 AIC(contAll_1, contAll_2)
 # NOTE: A curve is a better fit in all cases.
@@ -195,369 +214,336 @@ div$Period <- recode_factor(div$Period, HNC  = "A) Historical conservative",
                             ContN = "C) Contemporary Natives",
                             ContAll = "D) Contemporary Natives + Exotics")
 
+div_subset_main <- subset(div, div$Period %in% c("B) Historical broad", "C) Contemporary Natives",
+                                                 "D) Contemporary Natives + Exotics"))
+
+div_subset_main$Period <- recode_factor(div_subset_main$Period, 
+                                        "B) Historical broad"  = "A) Historical", 
+                                        "C) Contemporary Natives" = "B) Contemporary Natives",
+                                        "D) Contemporary Natives + Exotics" = "C) Contemporary Natives + Exotics")
+
+
+colorBlind4   <- c("#F0E442", "#E69F00", "#009E73","#0072B2")
+colorBlind3   <- c("#E69F00", "#009E73","#0072B2")
+scales::show_col(colorBlind4)
+
 
 (p1 <- ggplot(div, aes(x=T0, y=F0, color=Period))+
   geom_point(aes(color=Period))+
   geom_smooth()+
   theme_classic()+
-  facet_wrap(~Period))
+  scale_color_manual(values=colorBlind4)+
+  facet_wrap(~Period)) # free fit
 
 (p2 <- ggplot(div, aes(x=T0, y=F0, color=Period))+
     geom_point(aes(color=Period))+
     geom_smooth(method=lm, formula = y ~ log(x+1))+
     theme_classic()+
+    scale_color_manual(values=colorBlind4)+
+    facet_wrap(~Period)) # log linear fit
+
+(p3 <- ggplot(div_subset_main, aes(x=T0, y=F0, color=Period))+
+    geom_point(aes(color=Period))+
+    geom_smooth(method=lm, formula = y ~ log(x+1))+
+    theme_classic()+
+    scale_color_manual(values=colorBlind3)+
+    theme(legend.position = "bottom")+
+    facet_wrap(~Period)) # log linear fit (3 periods)
+
+
+
+ggsave(p1, file= paste0(plot_dir, "/RedundancyFreeFit.jpg"), width = 8, height = 6) 
+ggsave(p2, file= paste0(plot_dir, "/RedundancyLogLinear4.jpg"), width = 8, height = 6) 
+ggsave(p3, file= paste0(plot_dir, "/RedundancyLogLinear3.jpg"), width = 8, height = 4) 
+
+
+##########################################################################################
+# Observed trends (R0 vs T0):-------------------------------------------------------------
+# Historical conservative:----------------------------------------------------------------
+hnc_1R0 <- lm(R0 ~ T0, data=hnc)
+hnc_2R0 <- lm(R0 ~ log(T0+1), data=hnc)
+
+AIC(hnc_1R0, hnc_2R0) # Curve
+
+# Historical broad:-----------------------------------------------------------------------
+hnb_1R0 <- lm(R0 ~ T0, data=hnb)
+hnb_2R0 <- lm(R0 ~ log(T0+1), data=hnb)
+
+AIC(hnb_1R0, hnb_2R0)
+
+# Current native:-------------------------------------------------------------------------
+contN_1R0 <- lm(R0 ~ T0, data=contN)
+contN_2R0 <- lm(R0 ~ log(T0+1), data=contN)
+
+AIC(contN_1R0, contN_2R0)
+
+# Current All:----------------------------------------------------------------------------
+contAll_1R0 <- lm(R0 ~ T0, data=contAll)
+contAll_2R0 <- lm(R0 ~ log(T0+1), data=contAll)
+
+AIC(contAll_1R0, contAll_2R0)
+# NOTE: A linear regression is a better fit in all cases ( R0 vs T0)
+
+(p1R0 <- ggplot(div, aes(x=T0, y=R0, color=Period))+
+    geom_point(aes(color=Period))+
+    geom_smooth(method=lm, formula = y ~ x)+
+    theme_classic()+
+    scale_color_manual(values=colorBlind4)+
+    facet_wrap(~Period)) 
+(p2R0 <- ggplot(div_subset_main, aes(x=T0, y=R0, color=Period))+
+    geom_point(aes(color=Period))+
+    geom_smooth(method=lm, formula = y ~ x)+
+    theme_classic()+
+    scale_color_manual(values=colorBlind3)+
+    facet_wrap(~Period)) 
+
+ggsave(p1R0, file= paste0(plot_dir, "/RedundancyLinear4.jpg"), width = 8, height = 6)
+ggsave(p2R0, file= paste0(plot_dir, "/RedundancyLinear3.jpg"), width = 8, height = 4)
+
+##########################################################################################
+# Null TD and FD: ------------------------------------------------------------------------
+
+species_list <- unique(c(names(HNB[,-c(1:2)]), names(ContAll[,-c(1:2)]))) 
+
+rand <- list()
+rand17 <- list() # 17 sps max observed in any site and period
+
+for (j in 1:999){
+  for(i in 1:17){
+    df <- as.data.frame(matrix(ncol=100, nrow=1))
+    names(df) <- species_list
+    samp <- sample(species_list, size = i, replace = FALSE)
+    df[as.character(samp)] <- 1
+    df[is.na(df)] <- 0
+    rand17[[i]] <- df
+  } 
+  rand[[j]] <- do.call(rbind, rand17)
+} 
+rand <- do.call(rbind, rand)
+sum(rowSums(rand)==17) #999, OK
+save(rand, file="rand.RData")
+
+# Compute FD: ----------------------------------------------------------------------------
+rand <- rand[, order(names(rand))]
+dist_mat1 <- dist_mat1[order(rownames(dist_mat1)), order(colnames(dist_mat1))]
+identical(colnames(dist_mat1), names(rand)) # TRUE
+
+rand_l <- split(rand, f=rownames(rand))
+
+F0null <- list()
+for (i in 1:length(rand_l)){
+  assemblage <- as.matrix(t(rand_l[[i]]))
+  T0_n <- colSums(assemblage)
+  F0_n <- FD_MLE(assemblage, dist_mat1, mean(dist_mat1[dist_mat1>0]), q=0)
+  R0_n <- (T0_n - F0_n)
+  F0null[[i]] <- cbind(T0_n, F0_n, R0_n)
+}
+F0null <- as.data.frame(do.call(rbind,  F0null))
+save(F0null, file="F0null.RData")
+
+##########################################################################################
+# Plots:----------------------------------------------------------------------------------
+# https://waterdata.usgs.gov/blog/boxplots/
+# http://statseducation.com/Introduction-to-R/modules/graphics/smoothing/
+
+sum(div$T0==0) # 35
+div <- div[!div$T0==0,]
+div_subset_main <- div_subset_main[!div_subset_main$T0==0,]
+
+(nullF0 <- ggplot(data=F0null, aes(x=as.factor(T0_n), y=F0_n))+
+    geom_boxplot(alpha=0.5, color="gray49")+
+    stat_boxplot(geom ='errorbar', color="gray49") + 
+    #geom_smooth(aes(x=T0_n, y=F0_n), col="gray49", linetype="dashed")+ # default is gam
+    xlab("T0")+
+    ylab("F0")+
+    theme_minimal()) # null T0 vs F0
+(nullF012 <- ggplot(data=F0null[F0null$T0_n<13,], aes(x=as.factor(T0_n), y=F0_n))+
+    geom_boxplot(alpha=0.5, color="gray49")+
+    stat_boxplot(geom ='errorbar', color="gray49") + 
+    xlab("T0")+
+    ylab("F0")+
+    theme_minimal()) 
+
+(nullR0 <- ggplot(data=F0null, aes(x=as.factor(T0_n), y=R0_n))+
+    geom_boxplot(alpha=0.5, color="gray49")+
+    stat_boxplot(geom ='errorbar', color="gray49") + 
+    xlab("T0")+
+    ylab("R0")+
+    theme_minimal()) # null T0 vs R0
+(nullR012 <- ggplot(data=F0null[F0null$T0_n<13,], aes(x=as.factor(T0_n), y=R0_n))+
+    geom_boxplot(alpha=0.5, color="gray49")+
+    stat_boxplot(geom ='errorbar', color="gray49") + 
+    xlab("T0")+
+    ylab("R0")+
+    theme_minimal()) 
+
+# trait diversity:
+(p1nullF0 <- nullF0 + geom_point(data = div, 
+                                  aes(x=T0, y=F0, color=Period), size=2, alpha=0.5)+
+    geom_smooth(data = div, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
+    scale_color_manual(values=colorBlind4)+
+    facet_wrap(~Period))
+(p1nullF0_3 <- nullF0 + geom_point(data = div_subset_main, 
+                                 aes(x=T0, y=F0, color=Period), size=2, alpha=0.5)+
+    geom_smooth(data = div_subset_main, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
+    scale_color_manual(values=colorBlind3)+
+    theme(legend.position = "bottom")+
     facet_wrap(~Period))
 
-#ggsave(p1, file= paste0(plot_dir, "/RedundancyFreeFit.jpg"), width = 12, height = 10) 
-#ggsave(p2, file= paste0(plot_dir, "/RedundancyLogLinear.jpg"), width = 8, height = 6) 
+div_subset_main2 <- div_subset_main[div_subset_main$T0<13,]
+(p1nullF0_3B <- nullF012 + geom_point(data = div_subset_main2, 
+                                 aes(x=T0, y=F0, color=Period), size=2, alpha=0.5)+
+    geom_smooth(data = div_subset_main2, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
+    scale_color_manual(values=colorBlind3)+
+    theme(legend.position = "bottom")+
+    facet_wrap(~Period))
+
+# trait redundancy:
+(p1nullR0 <- nullR0 + geom_point(data = div, 
+                                 aes(x=T0, y=R0, color=Period), size=2, alpha=0.5)+
+    geom_smooth(data = div, aes(x=T0, y=R0, color=Period), method=lm, formula = y ~ x, se=TRUE)+
+    scale_color_manual(values=colorBlind4)+
+    facet_wrap(~Period))
+(p1nullR0_3 <- nullR0 + geom_point(data = div_subset_main, 
+                                   aes(x=T0, y=R0, color=Period), size=2, alpha=0.5)+
+    geom_smooth(data = div_subset_main, aes(x=T0, y=R0, color=Period), method=lm, formula = y ~ x, se=TRUE)+
+    scale_color_manual(values=colorBlind3)+
+    theme(legend.position = "bottom")+
+    facet_wrap(~Period))
+(p1nullR0_3B <- nullR0 + geom_point(data = div_subset_main2, 
+                                   aes(x=T0, y=R0, color=Period), size=2, alpha=0.5)+
+    geom_smooth(data = div_subset_main2, aes(x=T0, y=R0, color=Period), method=lm, formula = y ~ x, se=TRUE)+
+    scale_color_manual(values=colorBlind3)+
+    theme(legend.position = "bottom")+
+    facet_wrap(~Period))
+
+
+ggsave(p1nullF0, file= paste0(plot_dir, "/Null-ObservedF0.jpg"), width = 8, height = 6) 
+ggsave(p1nullF0_3B, file= paste0(plot_dir, "/Null-ObservedF0_3_12.jpg"), width = 8, height = 5) 
+
+ggsave(p1nullR0, file= paste0(plot_dir, "/Null-ObservedR0.jpg"), width = 8, height = 6) 
+ggsave(p1nullR0_3B, file= paste0(plot_dir, "/Null-ObservedR0_3_12.jpg"), width = 8, height = 5) 
+
+###########################################################################################
+# SES:-------------------------------------------------------------------------------------
+# https://www.cyclismo.org/tutorial/R/confidence.html
+# SES > 0 suggests the prevalence of trait divergence patterns
+# SES < 0 suggests the prevalence of trait convergence (REDUNDANCY)
+
+null_l <- split(F0null, f=F0null$T0_n)
+null_l_mean <- lapply(null_l, function(x) {c(mean(x$F0_n),
+                                           mean(x$R0_n))})
+null_l_sd <- lapply(null_l, function(x) {c(sd(x$F0_n),
+                                           sd(x$R0_n))})
+ll <- list(hnc, hnb, contN, contAll)
+ll <- lapply(ll, function(x) {split(x, f=x$T0)})
+vecs <- lapply(ll, function(x) {as.vector(names(x))})
+
+means <- lapply(vecs, function(x) {null_l_mean[x]})
+sds <- lapply(vecs, function(x) {null_l_sd[x]})
+
+ses_results_hnc <- mapply(function(x,y,z){((x$F0 - y[1])/z[1])}, ll[[1]], means[[1]], sds[[1]], SIMPLIFY = FALSE)
+ses_results_hnb <- mapply(function(x,y,z){((x$F0 - y[1])/z[1])}, ll[[2]], means[[2]], sds[[2]], SIMPLIFY = FALSE)
+ses_results_cn <- mapply(function(x,y,z){((x$F0 - y[1])/z[1])}, ll[[3]], means[[3]], sds[[3]], SIMPLIFY = FALSE)
+ses_results_call <- mapply(function(x,y,z){((x$F0 - y[1])/z[1])}, ll[[4]], means[[4]], sds[[4]], SIMPLIFY = FALSE)
+
+ses_results_hncR0 <- mapply(function(x,y,z){((x$R0 - y[2])/z[2])}, ll[[1]], means[[1]], sds[[1]], SIMPLIFY = FALSE)
+ses_results_hnbR0 <- mapply(function(x,y,z){((x$R0 - y[2])/z[2])}, ll[[2]], means[[2]], sds[[2]], SIMPLIFY = FALSE)
+ses_results_cnR0 <- mapply(function(x,y,z){((x$R0 - y[2])/z[2])}, ll[[3]], means[[3]], sds[[3]], SIMPLIFY = FALSE)
+ses_results_callR0 <- mapply(function(x,y,z){((x$R0 - y[2])/z[2])}, ll[[4]], means[[4]], sds[[4]], SIMPLIFY = FALSE)
+
+as_v <- function(x){as.vector(unlist(x))}
+ses_resultsF0 <- c(as_v(ses_results_hnc),as_v(ses_results_hnb),
+                   as_v(ses_results_cn),as_v(ses_results_call))
+ses_resultsR0 <- c(as_v(ses_results_hncR0),as_v(ses_results_hnbR0),
+                   as_v(ses_results_cnR0),as_v(ses_results_callR0))
+
+period <- rep(c("A) Historical Conservative", "B) Historical Broad", "C) Current Native", "D) Current Native + Exotic"), times=c(67,67,46,53))
+ses_dt <- data.frame("Period"=period, "SESF0"=ses_resultsF0, "SESR0"=ses_resultsR0)
+ses_dt <- ses_dt[!is.na(ses_dt$SESF0),]
+
+summF0 <- summarySE(ses_dt, measurevar=c("SESF0"), groupvars=c("Period"), na.rm = TRUE)
+summR0 <- summarySE(ses_dt, measurevar=c("SESR0"), groupvars=c("Period"), na.rm = TRUE)
+
+(summF0p <- ggplot(ses_dt, aes(x=Period, y=SESF0, colour=Period)) + 
+    geom_point(alpha=0.5)+
+    geom_point(data=summF0, aes(x=Period, y=SESF0, colour=Period), size=2.5)+
+    geom_errorbar(data=summF0, aes(ymin=SESF0-ci, ymax=SESF0+ci),
+                  width=0.2)+
+    theme_bw()+
+    scale_color_manual(values=colorBlind4)+
+    labs(y="SES", x="Period")+
+    geom_hline(yintercept = 0, linetype="dashed"))
+
+(summR0p <- ggplot(ses_dt, aes(x=Period, y=SESR0, colour=Period)) + 
+    geom_point(alpha=0.5)+
+    geom_point(data=summR0, aes(x=Period, y=SESR0, colour=Period), size=2.5)+
+    geom_errorbar(data=summR0, aes(ymin=SESR0-ci, ymax=SESR0+ci),
+                  width=0.2)+
+    theme_bw()+
+    scale_color_manual(values=colorBlind4)+
+    labs(y="SES", x="Period")+
+    geom_hline(yintercept = 0, linetype="dashed"))
+
+ggsave(summF0p, file= paste0(plot_dir, "/SES_F0.jpg"), width = 8, height = 5) 
+ggsave(summR0p, file= paste0(plot_dir, "/SES_R0.jpg"), width = 8, height = 5) 
+
+
+###########################################################################################
+# Quantile scores:-------------------------------------------------------------------------
+# The test is two sided:
+# P -values less than or equal to 0.025:significantly less F0 than expected
+# Greater than or equal to 0.975: significantly more F0 than expected
+# https://www.datanovia.com/en/blog/elegant-visualization-of-density-distribution-in-r-using-ridgeline/
+
+divrank <- div[,-c(5)]
+divrank <- split(divrank, f=divrank$T0)
+vrank <- names(divrank)
+nrows <- lapply(divrank, function(x) {nrow(x)})
+
+null_lrank <- lapply(null_l, function(x) {x$F0_n})
+null_lrank <- null_lrank[vrank]
+
+null_lrank2 <- mapply(function(x,y) {as.data.frame(t(replicate(x, y)))}, nrows, null_lrank, SIMPLIFY = FALSE)
+mat.rank.all <- mapply(function(x,y) {data.frame(cbind(x,y))}, divrank, null_lrank2, SIMPLIFY = FALSE)
+mat.rank.all <- do.call(rbind, mat.rank.all)
+
+l <- list()
+for (i in 1:nrow(mat.rank.all)){
+  ranks <- rank(as.vector(as.numeric(mat.rank.all[i,c(4:1003)])))[1]
+  pvals <- ranks/1000
+  l[[i]] <- data.frame(cbind(ranks, pvals))
+}
+l <- do.call(rbind, l)
+l <- data.frame(mat.rank.all[,c(1:4)], l) 
+
+l <- l[!l$T0==1,]
+(pvalsp <- ggplot(l, aes(x=Period, y=pvals, colour=Period)) + 
+    geom_violin(aes(fill=Period), alpha=0.3)+
+    geom_boxplot(width=0.1, alpha=0.5)+
+    theme_bw()+
+    labs(y="P-values")+
+    scale_color_manual(values=colorBlind4)+
+    scale_fill_manual(values=colorBlind4)+
+    geom_hline(yintercept = 0.025, linetype="dashed", color="red", alpha=0.5)+
+    geom_hline(yintercept = 0.975, linetype="dashed", color="red", alpha=0.5)+
+    geom_hline(yintercept = 0.75, linetype="dashed", color="lightgray")+
+    geom_hline(yintercept = 0.25, linetype="dashed", color="lightgray")+
+    geom_hline(yintercept = 0.5, linetype="dashed", color="lightgray"))
+
+(densp <- ggplot(l, aes(x=ranks, fill=Period, color=Period)) + 
+  geom_density(aes(fill=Period, col=Period), alpha=0.1)+
+  labs(x="Quantile scores", y="Density")+
+  theme_classic())
+
+
+ggsave(pvalsp, file= paste0(plot_dir, "/Pvals_F0.jpg"), width = 8, height = 5) 
+
+
 
 
 ##########################################################################################
-# Effect of period: ----------------------------------------------------------------------
-div2_1 <- lm(F0 ~ T0, data=div2)
-summary(div2_1)
-div2_2 <- lm(F0 ~ log(T0+1), data=div2)
-summary(div2_2)
-
-par(mfrow = c(1, 2))
-hist(div2_1$residuals, main= "Linear")
-hist(div2_2$residuals, main="Log-Linear")
-
-par(mfrow = c(2, 2))
-plot(div2_1)
-par(mfrow = c(2, 2))
-plot(div2_2) #Heterocedasticity
-
-AIC(div2_1, div2_2) # A curve is a better fit
-
-div2_3 <- lm(F0 ~ T0 + Period, data=div2)
-summary(div2_3)
-div2_4 <- lm(F0 ~ log(T0+1) + Period, data=div2)
-summary(div2_4)
-
-par(mfrow = c(1, 2))
-hist(div2_3$residuals, main= "Linear")
-hist(div2_4$residuals, main="Log-Linear")
-
-par(mfrow = c(2, 2))
-plot(div2_3)
-par(mfrow = c(2, 2))
-plot(div2_4) #Heterocedasticity
-
-div2_5 <- lm(F0 ~ T0*Period, data=div2)
-summary(div2_5)
-div2_6 <- lm(F0 ~ log(T0+1)*Period, data=div2)
-summary(div2_6)
-
-par(mfrow = c(1, 2))
-hist(div2_5$residuals, main= "Linear")
-hist(div2_6$residuals, main="Log-Linear")
-
-par(mfrow = c(2, 2))
-plot(div2_5)
-par(mfrow = c(2, 2))
-plot(div2_6) #Heterocedasticity
-
-aictab(list(div2_1, div2_2, div2_3, div2_4, div2_5, div2_6))
-# Log-linear without accounting for period.
-
-div2$logT0 <- log(div2$T0 + 1)
-div2_7 <- lm(F0~logT0*Period, data=div2)
-summary(div2_7)
-summary(div2_6) # Same, ok
-
-##########################################################################################
-# Plot results:---------------------------------------------------------------------------
-# Model div2_6
-hnc$logT0 <- log(hnc$T0 + 1)
-hnb$logT0 <- log(hnb$T0 + 1)
-contN$logT0 <- log(contN$T0 + 1)
-contAll$logT0 <- log(contAll$T0 + 1)
-
-pred <- data.frame("logT0" = c((seq(min(hnc$logT0), max(hnc$logT0), length.out = 67)),
-                            (seq(min(hnb$logT0), max(hnb$logT0), length.out = 67)),
-                            (seq(min(contN$logT0), max(contN$logT0), length.out = 46)),
-                            (seq(min(contAll$logT0), max(contAll$logT0), length.out = 53))),
-                   'Period' = c(rep("HNC", each = 67), rep("HNB", each = 67), 
-                                rep("ContN", each=46), rep("ContAll", each=53)))
-fit <- data.frame(pred, predict(div2_7, pred, se.fit = T))
-head(fit)
-
-fhnc <- subset(fit, Period=="HNC")
-fhnb <- subset(fit, Period=="HNB")
-fcontN <- subset(fit, Period=="ContN")
-fcontAll <- subset(fit, Period=="ContAll")
-
-dev.off()
-plot(F0 ~ logT0, data=div2, pch=as.numeric(Period), ylab="Trait diversity", xlab = "Species richness", cex=0.5)
-
-# Plot predicted lines for hnc
-lines(fhnc$fit ~ fhnc$logT0, col="#F8766D")
-lines((fhnc$fit + fhnc$se.fit) ~ fhnc$logT0, col="#F8766D", lty=3)
-lines((fhnc$fit - fhnc$se.fit) ~ fhnc$logT0, col="#F8766D", lty=3)
-
-
-# Plot predicted lines for hnb
-lines(fhnb$fit ~ fhnb$logT0, col="#00BFC4")
-lines((fhnb$fit + fhnb$se.fit) ~ fhnb$logT0, col="#00BFC4", lty=3)
-lines((fhnb$fit - fhnb$se.fit) ~ fhnb$logT0, col="#00BFC4", lty=3)
-
-# Plot predicted lines for contN
-lines(fcontN$fit ~ fcontN$logT0, col="#7CAE00")
-lines((fcontN$fit + fcontN$se.fit) ~ fcontN$logT0, col="#7CAE00", lty=3)
-lines((fcontN$fit - fcontN$se.fit) ~ fcontN$logT0, col="#7CAE00", lty=3)
-
-# Plot predicted lines for contAll
-lines(fcontAll$fit ~ fcontAll$logT0, col="#C77CFF")
-lines((fcontAll$fit + fcontAll$se.fit) ~ fcontAll$logT0, col="#C77CFF", lty=3)
-lines((fcontAll$fit - fcontAll$se.fit) ~ fcontAll$logT0, col="#C77CFF", lty=3)
-
-# add legend
-legend("topleft", legend=c("HNC", "HNB", "ContN", "ContAll"),
-       col=c("#F8766D", "#00BFC4","#7CAE00", "#C77CFF"),lty=1:2, cex=0.5)
-
-# add title
-mtext(side=3, "Trait diversity vs Species Richness", line=2, cex=1)
-
-
-############################################
-# Fix the issue with the fit lines in plot!!!!!!!!!!!!!!!!!!!!!!!!
-############################################
-
-
-##########################################################################################
-# Relationship between T0 & Period:
-str(div2)
-div2_1T0 <- lm(T0 ~ Period, data=div2)
-summary(div2_1T0)
-
-div2B <- subset(div2, div2$Period %in% c("HNB", "ContAll"))
-div2_2T0 <- lm(T0 ~ Period, data=div2B)
-summary(div2_2T0)
-
-# Paired tests : -------------------------------------------------------------------------
-# http://www.sthda.com/english/wiki/paired-samples-t-test-in-r
-
-# Data visualization:
-str(div)
-names(div)
-
-div %>% group_by(Period) %>% dplyr::summarise(count =n(), 
-                                              meanT0 = mean(T0), sdT0= sd(T0),
-                                              meanF0 = mean(F0), sdF0 = sd(F0))
-
-div2 %>% group_by(Period) %>% dplyr::summarise(count=n(),
-                                               meanT0 = mean(T0), sdT0= sd(T0),
-                                               meanF0 = mean(F0), sdF0 = sd(F0))
-
-# Taxonomic diversity:
-T0hnc <- div$T0[div$Period == "A) Historical conservative"]
-T0hnb <- div$T0[div$Period == "B) Historical broad"]
-T0cnat <- div$T0[div$Period == "C) Contemporary Natives"]
-T0call <- div$T0[div$Period == "D) Contemporary Natives + Exotics"]
-
-# Trait diversity:
-F0hnc <- div$F0[div$Period == "A) Historical conservative"]
-F0hnb <- div$F0[div$Period == "B) Historical broad"]
-F0cnat <- div$F0[div$Period == "C) Contemporary Natives"]
-F0call <- div$F0[div$Period == "D) Contemporary Natives + Exotics"]
-
-# Plot trend over time
-# pd <- paired(before, after) 
-# plot(pd, type = "profile") + theme_bw()
-
-# Compute the difference:
-sites46 <- as.character(droplevels(div2$SiteName[div2$Period=="ContN"]))
-sites53 <- as.character(droplevels(div2$SiteName[div2$Period=="ContAll"]))
-
-T0hnb53 <- div$T0[div$Period == "B) Historical broad" & div$SiteName %in% sites53]
-T0call53 <- div$T0[div$Period == "D) Contemporary Natives + Exotics" & div$SiteName %in% sites53]
-F0hnb53 <- div$F0[div$Period == "B) Historical broad" & div$SiteName %in% sites53]
-F0call53 <- div$F0[div$Period == "D) Contemporary Natives + Exotics" & div$SiteName %in% sites53]
-
-dT0 <- with(div, 
-            T0[Period == "B) Historical broad"] - T0[Period == "D) Contemporary Natives + Exotics"])
-shapiro.test(dT0) # Normality test for the differences
-# => p-value = 5.623e-06 we can't assume normality (67 obs)
-
-dF0 <- with(div, 
-          F0[Period == "B) Historical broad"] - F0[Period == "D) Contemporary Natives + Exotics"])
-shapiro.test(dF0) 
-# => p-value = 0.001474 we can't assume normality (67 obs)
-# => p-value = 0.0002118 we can't assume normality (53 obs)
-
-# Non-parametric tests:
-res <- wilcox.test(F0hnb53, F0call53, paired = TRUE, alternative = "two.sided") # change vecs for results
-res
-
-# Broad vs All (67)
-# Historical broad T0 and Contemporary T0 p-value = 3.76e-06
-# Historical broad F0 and Contemporary F0 p-value = 0.0001099
-
-# Broad vs All (53)
-# Historical broad T0 and Contemporary T0 p-value = 0.002095
-# Historical broad F0 and Contemporary F0 p-value = 0.05706
-
-# Plot these trends:
-
-divWTp <- subset(div, div$Period %in% c("B) Historical broad", "C) Contemporary Natives", "D) Contemporary Natives + Exotics"))
-divWTp <- gather(divWTp, key="Metric", value="Value", -c(2:3))
-
-divWTp$Period <- as.character(divWTp$Period)
-
-divWTp$Metric[divWTp$Metric=="T0"] <- "A) Taxonomic"
-divWTp$Metric[divWTp$Metric=="F0"] <- "B) Trait"
-
-divWTp$Period[divWTp$Period=="B) Historical broad"] <- "A) Historical"
-divWTp$Period[divWTp$Period=="C) Contemporary Natives"] <- "B) Contemporary Natives"
-divWTp$Period[divWTp$Period=="D) Contemporary Natives + Exotics"] <- "C) Contemporary Natives + Exotics"
-
-divWTp <- droplevels(divWTp)
-
-divWTp <- subset(divWTp, divWTp$Metric %in% c("A) Taxonomic", "B) Trait"))
-
-(T0F0p <- ggplot(divWTp, aes(Value, factor(Period))) +
-  geom_violin(aes(fill=factor(Period)), alpha=0.4) +
-  geom_boxplot(aes(fill=factor(Period)), alpha=0.5, width=0.1, position=position_dodge(1))+
-  xlab("Diversity") +
-  ylab("Period") +
-  labs(fill="Period")+
-  scale_fill_manual(values=c("#7CAE00","#00BFC4", "#C77CFF"))+
-  coord_flip()+
-  theme_bw()+
-  facet_wrap(~Metric))
-
-T0F0p <- T0F0p + theme(axis.text.x=element_text(angle=25, hjust=1))
-
-ggsave(T0F0p, file= paste0(plot_dir, "/T0F0p.jpg"), width = 10, height = 6)
-
-
-##########################################################################################
-#------------------------------------- TRAIT REDUNDANCY ----------------------------------
-##########################################################################################
-
-##########################################################################################
-# Mesures of Redundancy:------------------------------------------------------------------
-div$R0 <- div$T0 - div$F0 # at the assemblage level
-div$R0I <- (div$T0 - div$F0)/div$T0 # at the assemblage level (standardized)
-
-div_red <- subset(div, div$T0>0)
-
-div_red$R0II <- div2_2$residuals
-div_red$R0III <- div2_4$residuals
-div_red$R0IV <- div2_6$residuals
-
-##########################################################################################
-# Explore the relationship between R0/F0 & T0:--------------------------------------------
-
-div_red_all <- gather(div_red, key="RedundancyM", value="Value", -c(1:4))
-div_red_subs <- subset(div_red_all, div_red_all$RedundancyM %in% c("R0", "R0I", "R0II"))
-
-(redT0 <- ggplot(div_red_subs, aes(x=T0, y=Value, color=Period)) + 
-  geom_smooth(se=FALSE)+
-  geom_point()+
-  theme_bw()+
-  labs(y="Redundancy")+
-  facet_wrap(~RedundancyM)) 
-
-#ggsave(redT0, file= paste0(plot_dir, "/T0vsRedundancy.jpg"), width = 12, height = 5) 
-
-red <- lm(R0I ~ T0, data=div_red)
-summary(red)   
-redII <- lm(R0I ~ log(T0 + 1), data=div_red)
-summary(redII)   # Adjusted R-squared:  0.7265
-
-AIC(red, redII) # Curve (R0 is fitted by lm)
-
-redIII <- lm(R0II ~ T0, data=div_red)
-summary(redIII)   
-redIV <- lm(R0II ~ log(T0 + 1), data=div_red)
-summary(redIV)   
-
-# NOTES:
-# R0II*
-# Residual is actual y value − predicted y value
-# Res < 0, observed lower than predicted
-# Res > 0, observed higher than predicted
-
-##########################################################################################
-# Relationship between R0 & Period:
-red1 <- lm(R0 ~ Period, data=div_red)
-red2 <- lm(R0I ~ Period, data=div_red)
-red3 <- lm(R0II ~ Period, data=div_red)
-#summary() # OK
-
-##########################################################################################
-# Paired tests : -------------------------------------------------------------------------
-# Trait redundancy:
-R0hnb <- div_red$R0[div_red$Period == "B) Historical broad"]
-R0call <- div_red$R0[div_red$Period == "D) Contemporary Natives + Exotics"]
-
-R0Ihnb <- div_red$R0I[div_red$Period == "B) Historical broad"]
-R0Icall <- div_red$R0I[div_red$Period == "D) Contemporary Natives + Exotics"]
-
-R0IIhnb <- div_red$R0II[div_red$Period == "B) Historical broad"]
-R0IIcall <- div_red$R0II[div_red$Period == "D) Contemporary Natives + Exotics"]
-
-# Plot trend over time
-# pd <- paired(before, after) 
-# plot(pd, type = "profile") + theme_bw()
-
-# 53 observations:
-R0hnb53 <- div_red$R0[div_red$Period == "B) Historical broad" & div_red$SiteName %in% sites53]
-R0call53 <- div_red$R0[div_red$Period == "D) Contemporary Natives + Exotics" & div_red$SiteName %in% sites53]
-
-R0Ihnb53 <- div_red$R0I[div_red$Period == "B) Historical broad" & div_red$SiteName %in% sites53]
-R0Icall53 <- div_red$R0I[div_red$Period == "D) Contemporary Natives + Exotics" & div_red$SiteName %in% sites53]
-
-R0Ihnb46 <- div_red$R0I[div_red$Period == "B) Historical broad" & div_red$SiteName %in% sites46]
-R0Icall46 <- div_red$R0I[div_red$Period == "C) Contemporary Natives" & div_red$SiteName %in% sites46]
-
-R0IIhnb53 <- div_red$R0II[div_red$Period == "B) Historical broad" & div_red$SiteName %in% sites53]
-R0IIcall53 <- div_red$R0II[div_red$Period == "D) Contemporary Natives + Exotics" & div_red$SiteName %in% sites53]
-
-#dT0 <- with(div, 
-#            T0[Period == "B) Historical broad"] - T0[Period == "D) Contemporary Natives + Exotics"])
-#shapiro.test(dT0) # Normality test for the differences
-
-res <- wilcox.test(R0Ihnb46, R0Icall46, paired = TRUE, alternative = "two.sided")
-res
-
-# Broad vs All (67) R0 : ¿
-# Broad vs All (67) R0I : ?
-# Broad vs All (67) R0II : 0.5519
-
-# Plot these trends:
-
-div_redWTp <- subset(div_red, div_red$Period %in% c("B) Historical broad", "C) Contemporary Natives", "D) Contemporary Natives + Exotics"))
-div_redWTp <- div_redWTp[,-c(1,4:6,8:9)]
-
-div_redWTp <- gather(div_redWTp, key="Metric", value="Value", -c(1:2))
-
-div_redWTp$Period <- as.character(div_redWTp$Period)
-
-div_redWTp$Period[div_redWTp$Period=="B) Historical broad"] <- "A) Historical"
-div_redWTp$Period[div_redWTp$Period=="C) Contemporary Natives"] <- "B) Contemporary Natives"
-div_redWTp$Period[div_redWTp$Period=="D) Contemporary Natives + Exotics"] <- "C) Contemporary Natives + Exotics"
-
-div_redWTp <- droplevels(div_redWTp)
-dim(div_redWTp)
-
-166/3
-67+46+53
-
-
-(R0IIp <- ggplot(div_redWTp, aes(Value, factor(Period))) +  # Or R0Ip
-    geom_violin(aes(fill=factor(Period)), alpha=0.4) +
-    geom_boxplot(aes(fill=factor(Period)), alpha=0.5, width=0.1, position=position_dodge(1))+
-    xlab("Redundancy") +
-    ylab("Period") +
-    labs(fill="Period")+
-    scale_fill_manual(values=c("#7CAE00","#00BFC4", "#C77CFF"))+
-    coord_flip()+
-    theme_bw())
-
-ggsave(R0IIp, file= paste0(plot_dir, "/R0IIp.jpg"), width = 9, height = 5)
+# Final Figure (ms) ----------------------------------------------------------------------
 
 
 ##########################################################################################
