@@ -18,6 +18,9 @@ library(fishtree)
 library(taxize)
 library(vegan)
 library(pairwiseAdonis)
+library(ggpubr)
+library(grid)
+library(ggforce)
 
 
 rm(list=ls())
@@ -117,20 +120,20 @@ intersect(names(ContE), names(HNB)) %in% ext
 # Chapalichthys encaustus translocated in one site but extipated from its native range
 
 tt$Status <- rep(NA, nrow(tt))
-tt$Status <- ifelse(rownames(tt) %in% nat, "Native", tt$Status)
+tt$Status <- ifelse(rownames(tt) %in% nat, "Native Remaining", tt$Status)
 tt$Status <- ifelse(rownames(tt) %in% ext, "Extirpated", tt$Status)
 tt$Status <- ifelse(rownames(tt) %in% int, "Introduced", tt$Status)
-tt$Status <- ifelse(rownames(tt) == "Chapalichthys encaustus", "Native", tt$Status) 
+tt$Status <- ifelse(rownames(tt) == "Chapalichthys encaustus", "Native Remaining", tt$Status) 
 # Chapalichthys encaustus counted as native remaining instead of extirpated since it seems to be translocated in one site
 sum(is.na(tt$Status))
-sum(tt$Status=="Native") #49
+sum(tt$Status=="Native Remaining") #49
 sum(tt$Status=="Extirpated") #29
 
 # Classifying introduced species according to source:--------------------------------------
 # int (= exotic component)
 # Sources from Gesundheit & Macias Garcia, 2018.
 
-# 1 : Aquaculture
+# 1: Aquaculture
 # 2: Sportfishing
 # 3: Aquarium trade
 # 4: Contaminants in aquaculture or other source
@@ -160,34 +163,10 @@ sum(is.na(tt$Source))
 tt$Source <- ifelse(is.na(tt$Source), tt$Status, tt$Source)
 
 tt$SourceII <- rep(NA, nrow(tt))
-tt$SourceII <- ifelse(tt$Source %in% c("1", "2", "1/2"), "Aquaculture&Sportfishing", tt$SourceII)
-tt$SourceII <- ifelse(tt$Source %in% c("3", "4", "3/4"), "Aquarium&Contaminant", tt$SourceII)
+tt$SourceII <- ifelse(tt$Source %in% c("1", "2", "1/2"), "Introduced by Aquaculture & Sportfishing", tt$SourceII)
+tt$SourceII <- ifelse(tt$Source %in% c("3", "4", "3/4"), "Introduced by Aquarium & Contaminant", tt$SourceII)
 sum(is.na(tt$SourceII))
 tt$SourceII <- ifelse(is.na(tt$SourceII), tt$Status, tt$SourceII)
-
-# Classifying species according to their phylogeny:----------------------------------------
-example <- c("Poecilia sphenops", "Cyprinus carpio")
-exampled_df <- tax_name(example, get = c('family', "genus"), db = 'ncbi')
-
-tt$Family <- rep(NA, nrow(tt))
-tt$Family <- tax_name(rownames(tt), get = "family", db = "ncbi")$family
-
-sum(is.na(tt$Family)) # 14
-rownames(tt)[is.na(tt$Family)]
-
-tt$Family <- ifelse(rownames(tt) %in% c("Chirostoma aculeatum",
-                                        "Chirostoma charari",
-                                        "Chirostoma sp"), "Atherinopsidae", tt$Family) # FishBase
-tt$Family <- ifelse(rownames(tt) %in% c("Sicydium multipunctatum"), "Gobiidae", tt$Family) # FishBase
-tt$Family <- ifelse(rownames(tt) %in% c("Gila sp", "Tampichthys dichroma", "Algansea popoche"), "Leuciscidae", tt$Family) # FishBase
-tt$Family <- ifelse(rownames(tt) %in% c("Gambusia senilis",
-                                        "Poecilia sp",
-                                        "Poeciliopsis sp",
-                                        "Pseudoxiphophorus sp"), "Poeciliidae", tt$Family) # FishBase
-tt$Family <- ifelse(rownames(tt) %in% c("Oreochromis sp", "Nosferatu labridens"), "Cichlidae", tt$Family)
-tt$Family <- ifelse(rownames(tt) %in% c("Astyanax sp"), "Characidae", tt$Family)
-sum(is.na(tt$Family))
-
 tt2 <- tt
 save(tt2, file="tt2.RData")
 ###########################################################################################
@@ -220,21 +199,36 @@ save(coords, file="coords.RData")
 
 # Variables:
 (vI <- fviz_pca_var(PCA,
-                   title = "Variables-PCA 1-2",
-                   col.var = "contrib", # Color by contributions to the PC
-                   gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-                   repel = TRUE     # Avoid text overlapping
-))
-(vII <- fviz_pca_var(PCA,
-                    title = "Variables-PCA 3-4",
-                    axes = c(3,4),
+                    ylim=c(-1,1),
+                    xlim=c(-1,1),
+                    title = "Variables-PCA 1-2",
                     col.var = "contrib", # Color by contributions to the PC
                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
                     repel = TRUE     # Avoid text overlapping
 ))
+(vI <- vI + geom_circle(aes(x0=0, y0=0, r = 1), col="grey70"))
+(vII <- fviz_pca_var(PCA,
+                     ylim=c(-1,1),
+                     xlim=c(-1,1),
+                     title = "Variables-PCA 3-4",
+                     axes = c(3,4),
+                     col.var = "contrib", # Color by contributions to the PC
+                     gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+                     col.circle = "grey70",
+                     repel = TRUE     # Avoid text overlapping
+))
+(vII <- vII + geom_circle(aes(x0=0, y0=0, r = 1), col="grey70"))
+(panels_v <- ggarrange(vI,
+                       vII,
+                       common.legend = TRUE, 
+                       legend="bottom",
+                       align="hv",
+                       font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+
 
 ggsave(vI, filename = paste0(plot_dir, "/SM/FactoExtra/variables_12.jpg"), width=8, height=8)
 ggsave(vII, filename = paste0(plot_dir, "/SM/FactoExtra/variables_34.jpg"), width=8, height=8)
+ggsave(panels_v, filename = paste0(plot_dir, "/SM/FactoExtra/panels_v.jpg"), width=9, height=5)
 
 # Biplots:
 (bI <- fviz_pca_biplot(PCA, repel = TRUE,
@@ -305,145 +299,85 @@ PCAi$cos2           # Quality of representation
 
 ###########################################################################################
 # Plots to save : -------------------------------------------------------------------------
-(iA <- fviz_pca_ind(PCA,
-                      title = "Individuals-PCA 1-2 (by Status in 2005)",
-                      label = "none", # hide individual labels
-                      habillage = tt$Status, # color by groups
-                      palette = c("#0072B2", "#F0E442", "Darkgray"),
-                      addEllipses = TRUE, # TRUE for concentration ellipses
-                      ellipse.type = "convex"
-))
-(iB <- fviz_pca_ind(PCA,
+(Main <- fviz_pca_ind(PCA,
                       title = "Individuals-PCA 1-2 (by Source in 2005)",
                       label = "none", # hide individual labels
                       habillage = tt$SourceII, # color by groups
+                      palette = c("#0072B2","#D55E00","#E69F00","darkgray"),
                       #palette = c("#0072B2", "#F0E442", "Darkgray"),
                       addEllipses = TRUE, # TRUE for concentration ellipses
+                      legend.title="Status in 2005",
                       ellipse.type = "convex"
 ))
-(iC <- fviz_pca_ind(PCA,
-                    title = "Individuals-PCA 1-2 (by Family in 2005)",
-                    label = "none", # hide individual labels
-                    habillage = tt$Family, # color by groups
-                    #palette = c("#0072B2", "#F0E442", "Darkgray"),
-                    addEllipses = TRUE, # TRUE for concentration ellipses
-                    ellipse.type = "convex"
+
+# Biplots + individuals:
+(main_biplot <- fviz_pca_biplot(PCA, repel = TRUE,
+                       title = "PCA-Biplot 1-2",
+                       col.var = "grey31", # Variables color
+                       habillage = tt$Status, # color by groups
+                       palette = c("#0072B2", "#F0E442", "darkgray"),
+                       label = "var",
+                       addEllipses = TRUE,
+                       ellipse.alpha = 0.2,
+                       ellipse.type = "convex",
+                       legend.title = "Status"
 ))
-(iD <- fviz_pca_ind(PCA,
-                    title = "Individuals-PCA 1-2 (by SourceII in 2005)",
-                    label = "none", # hide individual labels
-                    habillage = tt$Source, # color by groups
-                    #palette = c("#0072B2", "#F0E442", "Darkgray"),
-                    addEllipses = TRUE, # TRUE for concentration ellipses
-                    ellipse.type = "convex"
+(main_biplotB <- fviz_pca_biplot(PCA, repel = TRUE,
+                                title = "PCA-Biplot 1-2",
+                                col.var = "grey31", # Variables color
+                                habillage = tt$SourceII, # color by groups
+                                palette = c("#0072B2","#D55E00","#E69F00","darkgray"),
+                                label = "var",
+                                addEllipses = TRUE,
+                                ellipse.alpha = 0.2,
+                                ellipse.type = "convex",
+                                legend.title = "Status"
 ))
 
-(i2A <- fviz_pca_ind(PCA,
-                     title = "Individuals-PCA 3-4 (by Status in 2005)",
-                     axes = c(3,4),
-                     label = "none", # hide individual labels
-                     habillage = tt$Status, # color by groups
-                     palette = c("#0072B2", "#F0E442", "Darkgray"),
-                     addEllipses = TRUE, # TRUE for concentration ellipses
-                     ellipse.type = "convex"
+(main_biplot34 <- fviz_pca_biplot(PCA, repel = TRUE,
+                                title = "PCA-Biplot 3-4",
+                                axes = c(3,4),
+                                col.var = "grey31", # Variables color
+                                habillage = tt$Status, # color by groups
+                                palette = c("#0072B2", "#F0E442", "darkgray"),
+                                label = "var",
+                                addEllipses = TRUE,
+                                ellipse.alpha = 0.2,
+                                ellipse.type = "convex",
+                                legend.title = "Status"
 ))
-(i2B <- fviz_pca_ind(PCA,
-                     title = "Individuals-PCA 3-4 (by Source in 2005)",
-                     axes = c(3,4),
-                     label = "none", # hide individual labels
-                     habillage = tt$SourceII, # color by groups
-                     #palette = c("#0072B2", "#F0E442", "Darkgray"),
-                     addEllipses = TRUE, # TRUE for concentration ellipses
-                     ellipse.type = "convex"
+(main_biplotB34 <- fviz_pca_biplot(PCA, repel = TRUE,
+                                 title = "PCA-Biplot 3-4",
+                                 axes = c(3,4),
+                                 col.var = "grey31", # Variables color
+                                 habillage = tt$SourceII, # color by groups
+                                 palette = c("#0072B2","#D55E00","#E69F00","darkgray"),
+                                 label = "var",
+                                 addEllipses = TRUE,
+                                 ellipse.alpha = 0.2,
+                                 ellipse.type = "convex",
+                                 legend.title = "Status"
 ))
-(i2C <- fviz_pca_ind(PCA,
-                     title = "Individuals-PCA 3-4 (by Family in 2005)",
-                     axes = c(3,4),
-                     label = "none", # hide individual labels
-                     habillage = tt$Family, # color by groups
-                     #palette = c("#0072B2", "#F0E442", "Darkgray"),
-                     addEllipses = TRUE, # TRUE for concentration ellipses
-                     ellipse.type = "convex"
-))
-(i2D <- fviz_pca_ind(PCA,
-                     title = "Individuals-PCA 3-4 (by SourceII in 2005)",
-                     axes = c(3,4),
-                     label = "none", # hide individual labels
-                     habillage = tt$Source, # color by groups
-                     #palette = c("#0072B2", "#F0E442", "Darkgray"),
-                     addEllipses = TRUE, # TRUE for concentration ellipses
-                     ellipse.type = "convex"
-))
+
+(panels_bStatus <- ggarrange(main_biplot,
+                       main_biplot34,
+                       common.legend = TRUE, 
+                       legend="bottom",
+                       align="hv",
+                       font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+
+(panels_bSource <- ggarrange(main_biplotB,
+                       main_biplotB34,
+                       common.legend = TRUE, 
+                       legend="bottom",
+                       align="hv",
+                       font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+
 
 # Save plots: -----------------------------------------------------------------------------
-groups12 <- grid.arrange(iA, iB, ncol=2)
-ggsave(groups12, filename= paste0(plot_dir, "/SM/FactoExtra/habillageStatus&Source12.jpg"), width = 16, height = 8) 
-
-groups34 <- grid.arrange(i2A, i2B, ncol=2)
-ggsave(groups34, filename= paste0(plot_dir, "/SM/FactoExtra/habillageStatus&Source34.jpg"), width = 16, height = 8) 
-
-ggsave(iC, filename= paste0(plot_dir, "/SM/FactoExtra/habillageFamily12.jpg"), width = 8, height = 8) 
-
-ggsave(i2C, filename= paste0(plot_dir, "/SM/FactoExtra/habillageFamily34.jpg"), width = 8, height = 8) 
-
-###########################################################################################
-# PERMANOVA:-------------------------------------------------------------------------------
-# Used to compare groups of objects and test the null hypothesis 
-# that the centroids and dispersion of the groups as defined 
-# by measure space are equivalent for all groups.
-
-identical(colnames(dist_mat1), rownames(tt)) #TRUE
-grouping <- as.factor(tt$Status)
-
-adonis(dist_mat1~grouping) # adonis 2?
-adonis(coords~grouping, method = "euclidean")
-
-# R-squared of 0.089*100= 8.9%
-pairwise.adonis(coords, grouping, sim.function='vegdist',sim.method='euclidian')
-
-
-grouping2 <- as.factor(tt$SourceII)
-
-adonis(dist_mat1~grouping2) # adonis 2?
-adonis(coords~grouping2, method = "euclidean")
-
-# R-squared of 0.17439*100= 17.43%
-pairwise.adonis(coords, grouping2, sim.function='vegdist',sim.method='euclidian')
-# OK, so overall we see that the group Aquaculture&Sportfishing is the most
-# different in composition. (But sample size)
-
-# ANOVA:------------------------------------------------------------------------------------
-coords2 <- data.frame(coords, tt$Status, tt$SourceII)
-coords2$tt.Status <- as.factor(coords2$tt.Status)
-coords2$tt.SourceII <- as.factor(coords2$tt.SourceII)
-
-mod1_dim1 <- lm(PC1~tt$Status, data=coords2)
-mod2_dim1 <- aov(PC1~tt$Status, data=coords2)
-summary(mod1_dim1)
-summary(mod2_dim1)
-anova(mod1_dim1)
-anova(mod2_dim1)
-TukeyHSD(mod2_dim1)
-
-mod1_dim2 <- lm(PC2~tt$Status, data=coords2)
-mod2_dim2 <- aov(PC2~tt$Status, data=coords2)
-summary(mod1_dim2)
-summary(mod2_dim2)
-anova(mod1_dim2)
-anova(mod2_dim2)
-TukeyHSD(mod2_dim2)
-
-mod1_dim3 <- lm(PC3~tt$Status, data=coords2)
-mod2_dim3 <- aov(PC3~tt$Status, data=coords2)
-summary(mod1_dim3) #  0.1564 
-summary(mod2_dim3)
-anova(mod1_dim3)
-anova(mod2_dim3)
-TukeyHSD(mod2_dim3)
-
-dim4 <- lm(PC4~tt$Status, data=coords2)
-plot(dim1)
-summary(dim4)
+ggsave(Main, filename = paste0(plot_dir, "/Main.jpg"), width=8, height=6)
+ggsave(panels_bStatus, filename = paste0(plot_dir, "/SM/FactoExtra/panels_bStatus.jpg"), width=10, height=6)
+ggsave(panels_bSource, filename = paste0(plot_dir, "/SM/FactoExtra/panels_bSource.jpg"), width=10, height=6)
 
 ###########################################################################################
 # End of script ###########################################################################
