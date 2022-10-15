@@ -30,7 +30,10 @@ This Appendix contains the code to:
 library(dplyr)
 library(tidyverse)
 library(ggplot2)  
-library(rworldmap)  
+library(rworldmap) 
+library(maps)
+library(maptools)
+library(grid)
 library(vegan)
 library(kableExtra)
 library(gridExtra)
@@ -145,6 +148,7 @@ The historical collections are reconstructed with catalog records from the Unive
 #### **Mapping local extirpations and introductions:**
 
 ```{r}
+# 
 plot_dir <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Plots" # Dir to save main plots
 
 
@@ -156,11 +160,6 @@ plot_dir <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange
 # Reddish purple == extirpations and introductions occurring
 # Blue == introductions occuring
 
-# Trangle == samll rivers
-# Circle == shallow lakes
-# Square == springs
-# Romb == others
-
 # Check data: -------------------------------------------------------------------------------------
 no_fish <- NDT67$SiteNameE[(NDT67$CountNat2005+NDT67$CountNonNat2005==0)]            # 14
 new_assemblage <- NDT67$SiteNameE[NDT67$CountNat2005==0 & NDT67$CountNonNat2005>0]   # 7
@@ -170,17 +169,18 @@ introductionsonly <- NDT67$SiteNameE[NDT67$CountHistNatBroad==NDT67$CountNat2005
 
 67 - (14+7+7+9+6) # 24 (both)
 
+ext_intro <- NDT67$SiteNameE[NDT67$CountHistNatBroad>NDT67$CountNat2005 & NDT67$CountNat2005>0 & NDT67$CountNonNat2005>0] # 24, OK
+
 # Create plotting dataframe: ----------------------------------------------------------------------
-df <- data.frame("Site"=NDT67$SiteNameE, "Basin"=NDT67$DrainageBasinE, "Latitude"=NDT67$Latitude,"Longitude"=NDT67$Longitude, "Status"=rep(NA, nrow(NDT67))) # "Type"=NDT67$SiteType
+df <- data.frame("Site"=NDT67$SiteNameE, "Basin"=NDT67$DrainageBasinE, "Latitude"=NDT67$Latitude,"Longitude"=NDT67$Longitude, "Status"=rep(NA, nrow(NDT67))) 
 
 df$Status <- ifelse(df$Site %in% no_fish, "No fish found (14)", df$Status) # Black
-df$Status <- ifelse(df$Site %in% new_assemblage, "New assemblage (100% nonnatives) (7)", df$Status) # Dark blue
+df$Status <- ifelse(df$Site %in% new_assemblage, "New assemblage (100% non-natives) (7)", df$Status) # Dark blue
 df$Status <- ifelse(df$Site %in% intact, "Intact assemblage (7)", df$Status) # Green
 df$Status <- ifelse(df$Site %in% extirpationsonly, "Extirpations but no introductions (9)", df$Status) # Dark blue
 df$Status <- ifelse(df$Site %in% introductionsonly, "Introductions but no extirpations (6)", df$Status) # Green
 df$Status <- ifelse(is.na(df$Status), "Both introductions & extirpations (24)", df$Status) # Both introductions and extirpations
 sum(is.na(df$Status)) # 0, OK
-
 
 # Mexico Map:
 world_map <- map_data('world', c('Mexico'), xlim=c(-115, -90), ylim=c(14,28))
@@ -190,36 +190,47 @@ world_mapII <- world_mapII[world_mapII$lat < 28 & world_mapII$lat > 16.5,]
 g0<-ggplot()+coord_fixed()+xlab("")+ylab("")
 g0<-g0+geom_polygon(data=world_map, aes(x=long, y=lat, group=group), colour="black", fill="gray66")
 g0<-g0+theme_bw()
-g0
+g0<-g0 + legendMap::scale_bar(lon = -115, lat = 15, 
+              distance_lon = 250, distance_lat = 50, distance_legend = 100, 
+              dist_unit = "km", orientation = TRUE,legend_size = 6,
+              arrow_length = 200, arrow_distance = 200, arrow_north_size = 6)
+g0<-g0 + geom_rect(aes(xmin = -107, xmax = -97, ymin = 16.5, ymax = 28), color = "black", fill = NA)
+g0 <- g0 + theme(legend.text = element_text(size=18),
+                  #legend.title = element_text(size=14),
+                  legend.position = "left",
+                  #plot.title = element_text(size=16, face="bold", hjust=0.5, vjust=1),
+                  axis.text.x = element_text(size=18),
+                  axis.text.y = element_text(size=18))
 
 g1<-ggplot()+coord_fixed()+xlab("")+ylab("")
 g1<-g1+geom_polygon(data=world_mapII, aes(x=long, y=lat, group=group), colour="black", fill="gray66")
 g1<-g1+theme_bw()
-g1<-g1+geom_point(data = df,  # Add and plot species data
+g1<-g1+geom_point(data = df,  # Add and plot site data
                    aes(x = Longitude, y = Latitude, 
-                       fill = Status), shape=21, size=5.5)
-g1<-g1+labs(title="Surveyed locations in Central Mexico")
-#(g1<-g1+scale_shape_manual(values = c("Other" = 23,
-#                                     "Shallow lake"= 22,
-#                                     "Small river"=21,
-#                                     "Spring"=24))) 
-# Cannot add these since the "not habitable" don't have a type...? (it would have to go with shape=Type)
+                       fill = Status), shape=21, size=5, alpha=0.7)
+
+g1<-g1 + legendMap::scale_bar(lon = -107, lat = 17, 
+              distance_lon = 100, distance_lat = 30, distance_legend = 100, legend_size = 4,
+              dist_unit = "km", orientation = FALSE)
+
+g1<-g1+labs(title="", fill="")
 g1<-g1+scale_fill_manual(values = c("No fish found (14)" = "black",
-                                     "New assemblage (100% nonnatives) (7)"= "#D17538",
+                                     "New assemblage (100% no-nnatives) (7)"= "#D17538",
                                      "Intact assemblage (7)"="#99CC33",
                                      "Extirpations but no introductions (9)"="#E6A729",
                                      "Introductions but no extirpations (6)"="#5DCADB",
                                      "Both introductions & extirpations (24)"="#AA4499"))
-(g1 <- g1 + theme(legend.text = element_text(size=12),
-                  legend.title = element_text(size=14),
-                  plot.title = element_text(size=18, face="bold"),
-                  axis.text.x = element_text(size=12),
-                  axis.text.y = element_text(size=12)))
+(g1 <- g1 + theme(legend.text = element_text(size=16),
+                  #legend.title = element_text(size=14),
+                  legend.position = "right",
+                  #plot.title = element_text(size=16, face="bold", hjust=0.5, vjust=1),
+                  axis.text.x = element_text(size=16),
+                  axis.text.y = element_text(size=16)))
 MexicoMap <- g0
-EIMap <- g1
+MexicoMapZoom <- g1
 
-ggsave(MexicoMap, file= paste0(plot_dir, "/SM/MexicoMap.jpg"), width = 14, height = 8)
-ggsave(EIMap, file= paste0(plot_dir, "/SM/EIMap.jpg"), width = 14, height = 8)
+ggsave(MexicoMap, file= paste0(plot_dir, "/MexicoMap.jpg"), width = 12, height = 8)
+ggsave(MexicoMapZoom, file= paste0(plot_dir, "/MexicoMapZoom.jpg"), width = 12, height = 8)
 
 # Proportions of the total:
 14/67*100
@@ -272,7 +283,7 @@ for (i in 1:length(listSpecaccum)){
 list_plots[[i]] <- SpCurves
 }
 SpecaccumP <- grid.arrange(grobs=list_plots, nrow=2)
-ggsave(SpecaccumP, file=paste0(plot_dir, "/SM/SpecaccumP.jpg"), width=8, height=8)
+ggsave(SpecaccumP, file=paste0(plot_dir, "/SM/Thesis/SpecaccumP.jpg"), width=8, height=8)
 ```
 <p>&nbsp;</p>
 #### **Estimated gamma diversity (Survey data 67):**
@@ -287,7 +298,7 @@ listSpecpool %>%
   kbl() %>%
   kable_styling()
 
-write.csv2(round(listSpecpool,2), file=paste0(plot_dir, "/SM/listSpecpool.csv"), row.names = F)
+write.csv2(round(listSpecpool,2), file=paste0(plot_dir, "/SM/Thesis/listSpecpool.csv"), row.names = F)
 
 ```
 <p>&nbsp;</p>

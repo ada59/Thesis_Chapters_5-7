@@ -15,13 +15,11 @@ library(corrplot)
 library(mFD)
 library(gridExtra)
 library(fishtree)
-library(taxize)
 library(vegan)
 library(pairwiseAdonis)
 library(ggpubr)
 library(grid)
 library(ggforce)
-
 
 rm(list=ls())
 myd <- getwd()
@@ -52,13 +50,11 @@ class(tt)
 #  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
 #  p.mat
 #} 
-# custom function (http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram#data-for-correlation-analysis)
-# Other : https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
 
 C <- cor(tt)
 p.mat <- cor.mtest(tt)
 
-file_path <- paste0(plot_dir, "/SM/Correlation matrix.png")
+file_path <- paste0(plot_dir, "/SM/Ms/Correlationmatrix.png")
 png(height=700, width=700, file=file_path)
 
 corrplot(C, method="color", type = "lower", order = "hclust", 
@@ -70,7 +66,6 @@ dev.off()
 # The highest positives are 0.51 between BEl & PFv and OGp & REs.
 # The highest negative is -0-48 between MBl and REs.
 # All traits kept.
-
 
 # Create trait distance matrix:------------------------------------------------------------
 round(diag(cov(tt)), 2)                 # Need to scale variances.
@@ -105,8 +100,7 @@ int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22
 # Any species translocated?
 intersect(names(ContE), names(HNB))
 "Poecilia mexicana" %in% names(HNB)
-# In NDT67:
-# only as exotic in manantial puerta del río
+# In NDT67: only as exotic in manantial puerta del río
 
 #View(NDT67) [these are in the exotics column]
 # "Chapalichthys encaustus"
@@ -163,10 +157,12 @@ sum(is.na(tt$Source))
 tt$Source <- ifelse(is.na(tt$Source), tt$Status, tt$Source)
 
 tt$SourceII <- rep(NA, nrow(tt))
-tt$SourceII <- ifelse(tt$Source %in% c("1", "2", "1/2"), "Introduced by Aquaculture & Sportfishing", tt$SourceII)
-tt$SourceII <- ifelse(tt$Source %in% c("3", "4", "3/4"), "Introduced by Aquarium & Contaminant", tt$SourceII)
+tt$SourceII <- ifelse(tt$Source %in% c("1", "2", "1/2"), "IA", tt$SourceII)
+tt$SourceII <- ifelse(tt$Source %in% c("3", "4", "3/4"), "IB", tt$SourceII)
 sum(is.na(tt$SourceII))
 tt$SourceII <- ifelse(is.na(tt$SourceII), tt$Status, tt$SourceII)
+tt$SourceII[tt$SourceII=="Extirpated"] <- "E"
+tt$SourceII[tt$SourceII=="Native Remaining"] <- "NR"
 tt2 <- tt
 save(tt2, file="tt2.RData")
 ###########################################################################################
@@ -225,10 +221,7 @@ save(coords, file="coords.RData")
                        align="hv",
                        font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
 
-
-ggsave(vI, filename = paste0(plot_dir, "/SM/FactoExtra/variables_12.jpg"), width=8, height=8)
-ggsave(vII, filename = paste0(plot_dir, "/SM/FactoExtra/variables_34.jpg"), width=8, height=8)
-ggsave(panels_v, filename = paste0(plot_dir, "/SM/FactoExtra/panels_v.jpg"), width=9, height=5)
+ggsave(panels_v, filename = paste0(plot_dir, "/SM/Ms/panels_v.jpg"), width=9, height=5)
 
 # Biplots:
 (bI <- fviz_pca_biplot(PCA, repel = TRUE,
@@ -254,9 +247,14 @@ ggsave(panels_v, filename = paste0(plot_dir, "/SM/FactoExtra/panels_v.jpg"), wid
                        ellipse.type = "convex"
 ))
 
-ggsave(bI, filename = paste0(plot_dir, "/SM/FactoExtra/biplot_12.jpg"), width=8, height=8)
-ggsave(bII, filename = paste0(plot_dir, "/SM/FactoExtra/biplot_34.jpg"), width=8, height=8)
+(panels_b <- ggarrange(bI,
+                       bII,
+                       common.legend = TRUE, 
+                       legend="bottom",
+                       align="hv",
+                       font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
 
+ggsave(panels_b, filename = paste0(plot_dir, "/SM/Ms/panels_b.jpg"), width=9, height=5)
 
 # Eigenvalues:
 eig.val <- get_eigenvalue(PCA)
@@ -265,7 +263,6 @@ eig.val
 # NOTES:
 # Dim 1 (25.865711) and Dim 2 (20.990517) = 46.87 (~46.9)
 # Reach > 70% variance explained with first four components
-# Reach > 80% var explained with first five components
 
 # Results for Variables
 PCAv <- get_pca_var(PCA)
@@ -287,9 +284,8 @@ c3 <- fviz_contrib(PCA, choice = "var", axes = 3, top = 10)
 c4 <- fviz_contrib(PCA, choice = "var", axes = 4, top = 10)
 # Dim 4:CPt(mainly), BLs and MBl
 
-
 contrib <- grid.arrange(c1, c2, c3, c4)
-ggsave(contrib, filename=paste0(plot_dir, "/SM/FactoExtra/ContributionsTraits.jpg"), width=10, height = 8)
+ggsave(contrib, filename=paste0(plot_dir, "/SM/Ms/ContributionsTraits.jpg"), width=10, height = 8)
 
 # Results for individuals
 PCAi <- get_pca_ind(PCA)
@@ -300,7 +296,7 @@ PCAi$cos2           # Quality of representation
 ###########################################################################################
 # Plots to save : -------------------------------------------------------------------------
 (Main <- fviz_pca_ind(PCA,
-                      title = "Individuals-PCA 1-2 (by Source in 2005)",
+                      title = "",
                       label = "none", # hide individual labels
                       habillage = tt$SourceII, # color by groups
                       palette = c("#0072B2","#D55E00","#E69F00","darkgray"),
@@ -310,19 +306,7 @@ PCAi$cos2           # Quality of representation
                       ellipse.type = "convex"
 ))
 
-# Biplots + individuals:
-(main_biplot <- fviz_pca_biplot(PCA, repel = TRUE,
-                       title = "PCA-Biplot 1-2",
-                       col.var = "grey31", # Variables color
-                       habillage = tt$Status, # color by groups
-                       palette = c("#0072B2", "#F0E442", "darkgray"),
-                       label = "var",
-                       addEllipses = TRUE,
-                       ellipse.alpha = 0.2,
-                       ellipse.type = "convex",
-                       legend.title = "Status"
-))
-(main_biplotB <- fviz_pca_biplot(PCA, repel = TRUE,
+(Main_biplotB <- fviz_pca_biplot(PCA, repel = TRUE,
                                 title = "PCA-Biplot 1-2",
                                 col.var = "grey31", # Variables color
                                 habillage = tt$SourceII, # color by groups
@@ -334,19 +318,7 @@ PCAi$cos2           # Quality of representation
                                 legend.title = "Status"
 ))
 
-(main_biplot34 <- fviz_pca_biplot(PCA, repel = TRUE,
-                                title = "PCA-Biplot 3-4",
-                                axes = c(3,4),
-                                col.var = "grey31", # Variables color
-                                habillage = tt$Status, # color by groups
-                                palette = c("#0072B2", "#F0E442", "darkgray"),
-                                label = "var",
-                                addEllipses = TRUE,
-                                ellipse.alpha = 0.2,
-                                ellipse.type = "convex",
-                                legend.title = "Status"
-))
-(main_biplotB34 <- fviz_pca_biplot(PCA, repel = TRUE,
+(Main_biplotB34 <- fviz_pca_biplot(PCA, repel = TRUE,
                                  title = "PCA-Biplot 3-4",
                                  axes = c(3,4),
                                  col.var = "grey31", # Variables color
@@ -359,26 +331,18 @@ PCAi$cos2           # Quality of representation
                                  legend.title = "Status"
 ))
 
-(panels_bStatus <- ggarrange(main_biplot,
-                       main_biplot34,
-                       common.legend = TRUE, 
-                       legend="bottom",
-                       align="hv",
-                       font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
-
-(panels_bSource <- ggarrange(main_biplotB,
-                       main_biplotB34,
-                       common.legend = TRUE, 
-                       legend="bottom",
-                       align="hv",
-                       font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+(panels_bSource <- ggarrange(Main_biplotB,
+                             Main_biplotB34,
+                             common.legend = TRUE, 
+                             legend="bottom",
+                             align="hv",
+                             font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
 
 
 # Save plots: -----------------------------------------------------------------------------
-ggsave(Main, filename = paste0(plot_dir, "/Main.jpg"), width=8, height=6)
-ggsave(panels_bStatus, filename = paste0(plot_dir, "/SM/FactoExtra/panels_bStatus.jpg"), width=10, height=6)
-ggsave(panels_bSource, filename = paste0(plot_dir, "/SM/FactoExtra/panels_bSource.jpg"), width=10, height=6)
-
+ggsave(Main, filename = paste0(plot_dir, "/SM/Ms/TraitSpacePanel.jpg"), width=8, height=6)
+ggsave(panels_bSource, filename = paste0(plot_dir, "/SM/Ms/panels_bSource.jpg"), width=10, height=6)
+save(Main, file="Main.RData")
 ###########################################################################################
 # End of script ###########################################################################
 
