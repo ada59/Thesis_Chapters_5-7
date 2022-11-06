@@ -21,8 +21,8 @@ str(fishtrait_complete)
 fishtrait_completeII <- fishtrait_complete[c("MBl", "BEl", "VEp", "REs", "OGp", "RMl","BLs","PFv","PFs","CPt")]
 rownames(fishtrait_completeII) <- fishtrait_complete$Genus.species
 
-sum(is.na(fishtrait_completeII))  # 15
-(15/(100*10))*100     # 1.5 %
+sum(is.na(fishtrait_completeII))  # 13
+(13/(100*10))*100     # 1.3 %
 
 ntimes <- 100
 t_imp <- list()

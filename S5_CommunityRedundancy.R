@@ -20,6 +20,7 @@ library(mFD)
 library(AICcmodavg)
 library(ggpubr)
 library(PairedData)
+library(grid)
 
 rm(list=ls())
 myd <- getwd()
@@ -31,7 +32,6 @@ load(paste0(myd, "/HNB.RData"))   # Broad Historical Native Assemblage
 load(paste0(myd, "/ContN.RData")) # Contemporary Native Assemblage
 load(paste0(myd, "/ContE.RData")) # Contemporary Exotic assemblage
 load(paste0(myd, "/dist_mat1.RData"))  # Trait distance matrix
-
 
 # Functions:------------------------------------------------------------------------------
 # FD and TD (Hill numbers) use the same units and TD is always greater than or equal to FD
@@ -115,6 +115,7 @@ div$R0 <- div$T0-div$F0 # trait redundancy
 # Observed trends: -----------------------------------------------------------------------
 # Subsets:
 div2 <- div[!div$T0==0,]
+save(div2, file = "div2.RData")
 hnc <- subset(div2, div2$Period=="HNC")
 hnb <- subset(div2, div2$Period=="HNB")
 contN <- subset(div2, div2$Period=="ContN")
@@ -132,36 +133,71 @@ summary(div2_2T0)
 # Relationship between T0 & F0:-----------------------------------------------------------
 # Historical conservative:----------------------------------------------------------------
 hnc_1 <- lm(F0 ~ T0, data=hnc)
+summary(hnc_1)
 hnc_2 <- lm(F0 ~ log(T0+1), data=hnc)
+summary(hnc_2)
 
-AIC(hnc_1, hnc_2) # Curve
+hnc_aic <- as.data.frame(aictab(list("Linear"=hnc_1, "Logarithmic"=hnc_2))) # Curve
 
 # Historical broad:-----------------------------------------------------------------------
 hnb_1 <- lm(F0 ~ T0, data=hnb)
+summary(hnb_1)
 hnb_2 <- lm(F0 ~ log(T0+1), data=hnb)
+summary(hnb_2)
 
-AIC(hnb_1, hnb_2)
+hnb_aic <- as.data.frame(aictab(list("Linear H"=hnb_1, "Logarithmic H"=hnb_2))) # Curve
 
 # Current native:-------------------------------------------------------------------------
 contN_1 <- lm(F0 ~ T0, data=contN)
+summary(contN_1)
 contN_2 <- lm(F0 ~ log(T0+1), data=contN)
+summary(contN_2)
 
-AIC(contN_1, contN_2)
+contN_aic <- as.data.frame(aictab(list("Linear Cont N"=contN_1, "Logarithmic Cont N"=contN_2))) # Curve
 
 # Current All:----------------------------------------------------------------------------
 contAll_1 <- lm(F0 ~ T0, data=contAll)
-summary(conAll_1)
+summary(contAll_1)
 contAll_2 <- lm(F0 ~ log(T0+1), data=contAll)
-summary(conAll_2)
+summary(contAll_2)
 
-par(mfrow=c(2,2))
-plot(contAll_1)
+contAll_aic <- as.data.frame(aictab(list("Linear Cont N + E"=contAll_1, "Logarithmic Cont N + E"=contAll_2))) # Curve
 
-par(mfrow=c(2,2))
-plot(contAll_2)
-
-AIC(contAll_1, contAll_2)
 # NOTE: A curve is a better fit in all cases.
+
+listaic <- data.frame(rbind(hnb_aic[,c(1,3:4)],contN_aic[,c(1,3:4)], contAll_aic[,c(1,3:4)]))
+listModels <- list(hnb_2, hnb_1, contN_2, contN_1, contAll_2, contAll_1)
+extract_m <- function(mod=NULL) {
+  x <- mod
+  df <- x$df.residual
+  fstat <- summary(x)$fstatistic[1]
+  adjr2 <- summary(x)$adj.r.squared
+  pval <- summary(x)$coefficients[2,4]
+  df <- as.data.frame(cbind(df, fstat, adjr2, pval))
+  return(df)
+}                         
+l_ext_m <- lapply(listModels, extract_m)
+l_ext_m <- do.call(rbind, l_ext_m)
+
+res_m_selection <- data.frame(cbind(listaic, l_ext_m))
+write.csv2(res_m_selection, file="res_m_selection.csv", row.names = F)
+##########################################################################################
+# Assumptions: ---------------------------------------------------------------------------
+# Histograms:-----------------------------------------------------------------------------
+par(mfrow = c(2, 2))
+hist(hnc_2$residuals)
+hist(hnb_2$residuals)
+hist(contN_2$residuals)
+hist(contAll_2$residuals)
+dev.off()
+
+# Plots:----------------------------------------------------------------------------------
+par(mfrow = c(2, 2), mar = c(2, 2, 2, 2))
+plot(hnc_2)
+plot(hnb_2)
+plot(contN_2)
+plot(contAll_2)
+dev.off()
 
 ##########################################################################################
 # Tests: ---------------------------------------------------------------------------------
@@ -216,17 +252,15 @@ div$Period <- recode_factor(div$Period, HNC  = "A) Historical conservative",
 
 div_subset_main <- subset(div, div$Period %in% c("B) Historical broad", "C) Contemporary Natives",
                                                  "D) Contemporary Natives + Exotics"))
-
+div_subset_main$Period <- droplevels(div_subset_main$Period)
 div_subset_main$Period <- recode_factor(div_subset_main$Period, 
-                                        "B) Historical broad"  = "A) Historical", 
-                                        "C) Contemporary Natives" = "B) Contemporary Natives",
-                                        "D) Contemporary Natives + Exotics" = "C) Contemporary Natives + Exotics")
-
+                                        "B) Historical broad" = "Historical",
+                                        "C) Contemporary Natives" = "Cont. Natives",
+                                        "D) Contemporary Natives + Exotics" = "Cont. Natives + Exotics")
 
 colorBlind4   <- c("#F0E442", "#E69F00", "#009E73","#0072B2")
 colorBlind3   <- c("#E69F00", "#009E73","#0072B2")
 scales::show_col(colorBlind4)
-
 
 (p1 <- ggplot(div, aes(x=T0, y=F0, color=Period))+
   geom_point(aes(color=Period))+
@@ -240,49 +274,62 @@ scales::show_col(colorBlind4)
     geom_smooth(method=lm, formula = y ~ log(x+1))+
     theme_classic()+
     scale_color_manual(values=colorBlind4)+
-    facet_wrap(~Period)) # log linear fit
+    facet_wrap(~Period)) # logarithmic fit
 
-(p3 <- ggplot(div_subset_main, aes(x=T0, y=F0, color=Period))+
-    geom_point(aes(color=Period))+
-    geom_smooth(method=lm, formula = y ~ log(x+1))+
-    theme_classic()+
-    scale_color_manual(values=colorBlind3)+
-    theme(legend.position = "bottom")+
-    facet_wrap(~Period)) # log linear fit (3 periods)
-
-
-
-ggsave(p1, file= paste0(plot_dir, "/RedundancyFreeFit.jpg"), width = 8, height = 6) 
-ggsave(p2, file= paste0(plot_dir, "/RedundancyLogLinear4.jpg"), width = 8, height = 6) 
-ggsave(p3, file= paste0(plot_dir, "/RedundancyLogLinear3.jpg"), width = 8, height = 4) 
-
+ggsave(p1, file= paste0(plot_dir, "/SM/Thesis/F0vsT0FreeFit4.jpg"), width = 8, height = 6) 
+ggsave(p2, file= paste0(plot_dir, "/SM/Thesis/F0vsT0Logarithmic4.jpg"), width = 8, height = 6) 
 
 ##########################################################################################
 # Observed trends (R0 vs T0):-------------------------------------------------------------
 # Historical conservative:----------------------------------------------------------------
 hnc_1R0 <- lm(R0 ~ T0, data=hnc)
+summary(hnc_1R0)
 hnc_2R0 <- lm(R0 ~ log(T0+1), data=hnc)
 
-AIC(hnc_1R0, hnc_2R0) # Curve
+AIC(hnc_1R0, hnc_2R0) # Linear
 
 # Historical broad:-----------------------------------------------------------------------
 hnb_1R0 <- lm(R0 ~ T0, data=hnb)
+summary(hnb_1R0)
 hnb_2R0 <- lm(R0 ~ log(T0+1), data=hnb)
 
-AIC(hnb_1R0, hnb_2R0)
+AIC(hnb_1R0, hnb_2R0) # Linear
 
 # Current native:-------------------------------------------------------------------------
 contN_1R0 <- lm(R0 ~ T0, data=contN)
+summary(contN_1R0)
 contN_2R0 <- lm(R0 ~ log(T0+1), data=contN)
 
-AIC(contN_1R0, contN_2R0)
+AIC(contN_1R0, contN_2R0) # Linear
 
 # Current All:----------------------------------------------------------------------------
 contAll_1R0 <- lm(R0 ~ T0, data=contAll)
+summary(contAll_1R0)
 contAll_2R0 <- lm(R0 ~ log(T0+1), data=contAll)
 
-AIC(contAll_1R0, contAll_2R0)
+AIC(contAll_1R0, contAll_2R0) # Linear
 # NOTE: A linear regression is a better fit in all cases ( R0 vs T0)
+
+##########################################################################################
+# Assumptions: ---------------------------------------------------------------------------
+# Histograms:-----------------------------------------------------------------------------
+par(mfrow = c(2, 2))
+hist(hnc_1R0$residuals)
+hist(hnb_1R0$residuals)
+hist(contN_1R0$residuals)
+hist(contAll_1R0$residuals)
+dev.off()
+
+# Plots:----------------------------------------------------------------------------------
+par(mfrow = c(2, 2), mar = c(2, 2, 2, 2))
+plot(hnc_1R0)
+plot(hnb_1R0)
+plot(contN_1R0)
+plot(contAll_1R0)
+dev.off()
+
+##########################################################################################
+# Plot trends:----------------------------------------------------------------------------
 
 (p1R0 <- ggplot(div, aes(x=T0, y=R0, color=Period))+
     geom_point(aes(color=Period))+
@@ -290,19 +337,11 @@ AIC(contAll_1R0, contAll_2R0)
     theme_classic()+
     scale_color_manual(values=colorBlind4)+
     facet_wrap(~Period)) 
-(p2R0 <- ggplot(div_subset_main, aes(x=T0, y=R0, color=Period))+
-    geom_point(aes(color=Period))+
-    geom_smooth(method=lm, formula = y ~ x)+
-    theme_classic()+
-    scale_color_manual(values=colorBlind3)+
-    facet_wrap(~Period)) 
 
-ggsave(p1R0, file= paste0(plot_dir, "/RedundancyLinear4.jpg"), width = 8, height = 6)
-ggsave(p2R0, file= paste0(plot_dir, "/RedundancyLinear3.jpg"), width = 8, height = 4)
+ggsave(p1R0, file= paste0(plot_dir, "/SM/Thesis/RedundancyLinear4.jpg"), width = 8, height = 6)
 
 ##########################################################################################
-# Null TD and FD: ------------------------------------------------------------------------
-
+# Null models: ---------------------------------------------------------------------------
 species_list <- unique(c(names(HNB[,-c(1:2)]), names(ContAll[,-c(1:2)]))) 
 
 rand <- list()
@@ -323,7 +362,7 @@ rand <- do.call(rbind, rand)
 sum(rowSums(rand)==17) #999, OK
 save(rand, file="rand.RData")
 
-# Compute FD: ----------------------------------------------------------------------------
+# Compute FD & Redundancy: ---------------------------------------------------------------------
 rand <- rand[, order(names(rand))]
 dist_mat1 <- dist_mat1[order(rownames(dist_mat1)), order(colnames(dist_mat1))]
 identical(colnames(dist_mat1), names(rand)) # TRUE
@@ -343,9 +382,6 @@ save(F0null, file="F0null.RData")
 
 ##########################################################################################
 # Plots:----------------------------------------------------------------------------------
-# https://waterdata.usgs.gov/blog/boxplots/
-# http://statseducation.com/Introduction-to-R/modules/graphics/smoothing/
-
 sum(div$T0==0) # 35
 div <- div[!div$T0==0,]
 div_subset_main <- div_subset_main[!div_subset_main$T0==0,]
@@ -354,82 +390,46 @@ div_subset_main <- div_subset_main[!div_subset_main$T0==0,]
     geom_boxplot(alpha=0.5, color="gray49")+
     stat_boxplot(geom ='errorbar', color="gray49") + 
     #geom_smooth(aes(x=T0_n, y=F0_n), col="gray49", linetype="dashed")+ # default is gam
-    xlab("T0")+
-    ylab("F0")+
-    theme_minimal()) # null T0 vs F0
-(nullF012 <- ggplot(data=F0null[F0null$T0_n<13,], aes(x=as.factor(T0_n), y=F0_n))+
-    geom_boxplot(alpha=0.5, color="gray49")+
-    stat_boxplot(geom ='errorbar', color="gray49") + 
-    xlab("T0")+
-    ylab("F0")+
-    theme_minimal()) 
-
+    xlab("SR")+
+    ylab("T0")+
+    theme_minimal()) # null SR vs T0
 (nullR0 <- ggplot(data=F0null, aes(x=as.factor(T0_n), y=R0_n))+
     geom_boxplot(alpha=0.5, color="gray49")+
     stat_boxplot(geom ='errorbar', color="gray49") + 
-    xlab("T0")+
+    xlab("SR")+
     ylab("R0")+
-    theme_minimal()) # null T0 vs R0
-(nullR012 <- ggplot(data=F0null[F0null$T0_n<13,], aes(x=as.factor(T0_n), y=R0_n))+
-    geom_boxplot(alpha=0.5, color="gray49")+
-    stat_boxplot(geom ='errorbar', color="gray49") + 
-    xlab("T0")+
-    ylab("R0")+
-    theme_minimal()) 
+    theme_minimal()) # null SR vs R0
 
-# trait diversity:
 (p1nullF0 <- nullF0 + geom_point(data = div, 
                                   aes(x=T0, y=F0, color=Period), size=2, alpha=0.5)+
     geom_smooth(data = div, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
     scale_color_manual(values=colorBlind4)+
-    facet_wrap(~Period))
+    facet_wrap(~Period)) # SM plot, trait diversity
 (p1nullF0_3 <- nullF0 + geom_point(data = div_subset_main, 
                                  aes(x=T0, y=F0, color=Period), size=2, alpha=0.5)+
     geom_smooth(data = div_subset_main, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
     scale_color_manual(values=colorBlind3)+
-    theme(legend.position = "bottom")+
-    facet_wrap(~Period))
-
-div_subset_main2 <- div_subset_main[div_subset_main$T0<13,]
-(p1nullF0_3B <- nullF012 + geom_point(data = div_subset_main2, 
-                                 aes(x=T0, y=F0, color=Period), size=2, alpha=0.5)+
-    geom_smooth(data = div_subset_main2, aes(x=T0, y=F0, color=Period), method=lm, formula = y ~ log(x+1), se=TRUE)+
-    scale_color_manual(values=colorBlind3)+
-    theme(legend.position = "bottom")+
-    facet_wrap(~Period))
-
-# trait redundancy:
+    theme(legend.position = "none",
+          axis.text.x = element_text(size=8))+
+    facet_wrap(~Period)) # Main ms plot, trait diversity
 (p1nullR0 <- nullR0 + geom_point(data = div, 
                                  aes(x=T0, y=R0, color=Period), size=2, alpha=0.5)+
     geom_smooth(data = div, aes(x=T0, y=R0, color=Period), method=lm, formula = y ~ x, se=TRUE)+
     scale_color_manual(values=colorBlind4)+
-    facet_wrap(~Period))
+    facet_wrap(~Period)) # SM plot, trait redundancy
 (p1nullR0_3 <- nullR0 + geom_point(data = div_subset_main, 
                                    aes(x=T0, y=R0, color=Period), size=2, alpha=0.5)+
     geom_smooth(data = div_subset_main, aes(x=T0, y=R0, color=Period), method=lm, formula = y ~ x, se=TRUE)+
     scale_color_manual(values=colorBlind3)+
-    theme(legend.position = "bottom")+
-    facet_wrap(~Period))
-(p1nullR0_3B <- nullR0 + geom_point(data = div_subset_main2, 
-                                   aes(x=T0, y=R0, color=Period), size=2, alpha=0.5)+
-    geom_smooth(data = div_subset_main2, aes(x=T0, y=R0, color=Period), method=lm, formula = y ~ x, se=TRUE)+
-    scale_color_manual(values=colorBlind3)+
-    theme(legend.position = "bottom")+
-    facet_wrap(~Period))
-
+    theme(legend.position = "none",
+          axis.text.x = element_text(size=8))+
+    facet_wrap(~Period)) # Main ms plot, trait redundancy
 
 ggsave(p1nullF0, file= paste0(plot_dir, "/Null-ObservedF0.jpg"), width = 8, height = 6) 
-ggsave(p1nullF0_3B, file= paste0(plot_dir, "/Null-ObservedF0_3_12.jpg"), width = 8, height = 5) 
-
 ggsave(p1nullR0, file= paste0(plot_dir, "/Null-ObservedR0.jpg"), width = 8, height = 6) 
-ggsave(p1nullR0_3B, file= paste0(plot_dir, "/Null-ObservedR0_3_12.jpg"), width = 8, height = 5) 
 
 ###########################################################################################
 # SES:-------------------------------------------------------------------------------------
-# https://www.cyclismo.org/tutorial/R/confidence.html
-# SES > 0 suggests the prevalence of trait divergence patterns
-# SES < 0 suggests the prevalence of trait convergence (REDUNDANCY)
-
 null_l <- split(F0null, f=F0null$T0_n)
 null_l_mean <- lapply(null_l, function(x) {c(mean(x$F0_n),
                                            mean(x$R0_n))})
@@ -471,6 +471,7 @@ summR0 <- summarySE(ses_dt, measurevar=c("SESR0"), groupvars=c("Period"), na.rm 
     geom_errorbar(data=summF0, aes(ymin=SESF0-ci, ymax=SESF0+ci),
                   width=0.2)+
     theme_bw()+
+    theme(legend.position = "none")+
     scale_color_manual(values=colorBlind4)+
     labs(y="SES", x="Period")+
     geom_hline(yintercept = 0, linetype="dashed"))
@@ -481,21 +482,34 @@ summR0 <- summarySE(ses_dt, measurevar=c("SESR0"), groupvars=c("Period"), na.rm 
     geom_errorbar(data=summR0, aes(ymin=SESR0-ci, ymax=SESR0+ci),
                   width=0.2)+
     theme_bw()+
+    theme(legend.position = "none")+
     scale_color_manual(values=colorBlind4)+
     labs(y="SES", x="Period")+
     geom_hline(yintercept = 0, linetype="dashed"))
 
-ggsave(summF0p, file= paste0(plot_dir, "/SES_F0.jpg"), width = 8, height = 5) 
-ggsave(summR0p, file= paste0(plot_dir, "/SES_R0.jpg"), width = 8, height = 5) 
+ggsave(summF0p, file= paste0(plot_dir, "/SM/Thesis/SES_F0.jpg"), width = 6, height = 4) 
+ggsave(summR0p, file= paste0(plot_dir, "/SM/Thesis/SES_R0.jpg"), width = 6, height = 4)
 
+###########################################################################################
+# One-tailed t test:---------------------------------------------------------------------------
+ses_dt_n <- ses_dt %>%
+  group_by(Period) %>%
+  summarise_all(.funs = funs(statistic = shapiro.test(.)$statistic, 
+                             p.value = shapiro.test(.)$p.value))
+ses_dtF0 <- ses_dt[,-c(3)]
+ses_dtF0 <- ses_dtF0 %>%
+  group_by(Period) %>%
+  summarise(res = list(t.test(SESF0, mu=0, alternative="less")))
+ses_dtF0$res  
+
+ses_dtR0 <- ses_dt[,-c(2)]
+ses_dtR0 <- ses_dtR0 %>%
+  group_by(Period) %>%
+  summarise(res = list(t.test(SESR0, mu=0, alternative="greater")))
+ses_dtR0$res  
 
 ###########################################################################################
 # Quantile scores:-------------------------------------------------------------------------
-# The test is two sided:
-# P -values less than or equal to 0.025:significantly less F0 than expected
-# Greater than or equal to 0.975: significantly more F0 than expected
-# https://www.datanovia.com/en/blog/elegant-visualization-of-density-distribution-in-r-using-ridgeline/
-
 divrank <- div[,-c(5)]
 divrank <- split(divrank, f=divrank$T0)
 vrank <- names(divrank)
@@ -525,26 +539,77 @@ l <- l[!l$T0==1,]
     labs(y="P-values")+
     scale_color_manual(values=colorBlind4)+
     scale_fill_manual(values=colorBlind4)+
+    theme(legend.position = "none")+
     geom_hline(yintercept = 0.025, linetype="dashed", color="red", alpha=0.5)+
     geom_hline(yintercept = 0.975, linetype="dashed", color="red", alpha=0.5)+
     geom_hline(yintercept = 0.75, linetype="dashed", color="lightgray")+
     geom_hline(yintercept = 0.25, linetype="dashed", color="lightgray")+
     geom_hline(yintercept = 0.5, linetype="dashed", color="lightgray"))
 
-(densp <- ggplot(l, aes(x=ranks, fill=Period, color=Period)) + 
-  geom_density(aes(fill=Period, col=Period), alpha=0.1)+
-  labs(x="Quantile scores", y="Density")+
-  theme_classic())
-
-
-ggsave(pvalsp, file= paste0(plot_dir, "/Pvals_F0.jpg"), width = 8, height = 5) 
-
-
-
+ggsave(pvalsp, file= paste0(plot_dir, "/SM/Thesis/Pvals_F0.jpg"), width = 6, height = 4) 
+ggsave(pvalsp, file= paste0(plot_dir, "/SM/Ms/Pvals_F0.jpg"), width = 6, height = 4) 
 
 ##########################################################################################
-# Final Figure (ms) ----------------------------------------------------------------------
+# Figures (Ms) ---------------------------------------------------------------------------
 
+# Main Figure 3: -------------------------------------------------------------------------
+(panelsR0T0SR <- ggarrange(p1nullF0_3 + rremove("xlab"),
+                           p1nullR0_3 + theme(strip.background = element_blank(),
+                                              strip.text.x = element_blank()),
+                           align="hv",
+                           nrow=2,
+                           labels = c("A)", "B)"),
+                           font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+ggsave(panelsR0T0SR, file= paste0(plot_dir, "/panelsR0T0SR.jpg"), width = 8, height = 5) 
+
+# Main Figure 4: -------------------------------------------------------------------------
+recfact <- function(x){recode_factor(x, "B) Historical Broad" = "Historical",
+                                        "C) Current Native" = "Cont. Natives",
+                                        "D) Current Native + Exotic" = "Cont. Natives + Exotics")
+  
+}
+summF03 <- summF0[!summF0$Period=="A) Historical Conservative",]
+summR03 <- summR0[!summR0$Period=="A) Historical Conservative",]
+ses_dt3 <- ses_dt[!ses_dt$Period=="A) Historical Conservative",]
+summF03$Period <- droplevels(recfact(summF03$Period))
+summR03$Period <- droplevels(recfact(summR03$Period))
+ses_dt3$Period <- droplevels(recfact(ses_dt3$Period))
+
+(summF03p <- ggplot(ses_dt3, aes(x=Period, y=SESF0, colour=Period)) + 
+    geom_point(alpha=0.5, size=2)+
+    geom_point(data=summF03, aes(x=Period, y=SESF0, colour=Period), size=3.5)+
+    geom_errorbar(data=summF03, aes(ymin=SESF0-ci, ymax=SESF0+ci),
+                  width=0.2)+
+    theme_bw()+
+    ylim(c(-3,2.8))+
+    theme(legend.position = "none")+
+    scale_color_manual(values=colorBlind3)+
+    labs(y="SES", x="Period", title="")+
+    geom_hline(yintercept = 0, linetype="dashed"))
+(summR03p <- ggplot(ses_dt3, aes(x=Period, y=SESR0, colour=Period)) + 
+    geom_point(alpha=0.5, size=2)+
+    geom_point(data=summR03, aes(x=Period, y=SESR0, colour=Period), size=3.5)+
+    geom_errorbar(data=summR03, aes(ymin=SESR0-ci, ymax=SESR0+ci),
+                  width=0.2)+
+    theme_bw()+
+    ylim(c(-3,2.8))+
+    theme(legend.position = "none")+
+    scale_color_manual(values=colorBlind3)+
+    labs(y="SES", x="Period", title ="")+
+    geom_hline(yintercept = 0, linetype="dashed"))
+(panelsSES <- ggarrange(summF03p + rremove("xlab") + rremove("ylab"),
+                        summR03p + rremove("xlab") + rremove("ylab"),
+                        align="hv",
+                        labels=c("A)", "B)"),
+                        nrow=1,
+                        font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+
+(annotate_figure(panelsSES, left = textGrob("SES", rot = 90, hjust = 0, vjust = 1, gp = gpar(cex = 1)),
+                bottom = textGrob("Period", hjust= 0.3, vjust=0.1, gp = gpar(cex = 1))))
+ggsave(panelsSES, file= paste0(plot_dir, "/panelsSES.jpg"), width =8, height = 5) 
+
+# Supplementary material, results for HNC (yellow):---------------------------------------
+# TBC
 
 ##########################################################################################
 # End of script ##########################################################################
