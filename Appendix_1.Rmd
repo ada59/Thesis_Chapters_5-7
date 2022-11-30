@@ -53,6 +53,7 @@ load(paste0(myd, "/HNB.RData"))     # Broad Historical Native Assemblage
 load(paste0(myd, "/ContAll.RData")) # Contemporary Native + Exotic assemblage
 
 load(paste0(myd, "/NDT67.RData"))   # Raw data (67 sites)
+load(paste0(myd, "/tt2.RData"))     # For species & sourceII
 ```
 <p>&nbsp;</p>
 
@@ -179,7 +180,7 @@ df$Status <- ifelse(df$Site %in% new_assemblage, "New assemblage (100% non-nativ
 df$Status <- ifelse(df$Site %in% intact, "Intact assemblage (7)", df$Status) # Green
 df$Status <- ifelse(df$Site %in% extirpationsonly, "Extirpations but no introductions (9)", df$Status) # Dark blue
 df$Status <- ifelse(df$Site %in% introductionsonly, "Introductions but no extirpations (6)", df$Status) # Green
-df$Status <- ifelse(is.na(df$Status), "Both introductions & extirpations (24)", df$Status) # Both introductions and extirpations
+df$Status <- ifelse(is.na(df$Status), "Introductions & extirpations (24)", df$Status) # Both introductions and extirpations
 sum(is.na(df$Status)) # 0, OK
 
 # Mexico Map:
@@ -207,7 +208,7 @@ g1<-g1+geom_polygon(data=world_mapII, aes(x=long, y=lat, group=group), colour="b
 g1<-g1+theme_bw()
 g1<-g1+geom_point(data = df,  # Add and plot site data
                    aes(x = Longitude, y = Latitude, 
-                       fill = Status), shape=21, size=5, alpha=0.7)
+                       fill = Status), shape=21, size=5, alpha=0.9)
 
 g1<-g1 + legendMap::scale_bar(lon = -107, lat = 17, 
               distance_lon = 100, distance_lat = 30, distance_legend = 100, legend_size = 4,
@@ -215,11 +216,11 @@ g1<-g1 + legendMap::scale_bar(lon = -107, lat = 17,
 
 g1<-g1+labs(title="", fill="")
 g1<-g1+scale_fill_manual(values = c("No fish found (14)" = "black",
-                                     "New assemblage (100% no-nnatives) (7)"= "#D17538",
+                                     "New assemblage (100% non-natives) (7)"= "#D17538",
                                      "Intact assemblage (7)"="#99CC33",
                                      "Extirpations but no introductions (9)"="#E6A729",
                                      "Introductions but no extirpations (6)"="#5DCADB",
-                                     "Both introductions & extirpations (24)"="#AA4499"))
+                                     "Introductions & extirpations (24)"="#AA4499"))
 (g1 <- g1 + theme(legend.text = element_text(size=16),
                   #legend.title = element_text(size=14),
                   legend.position = "right",
@@ -239,6 +240,21 @@ ggsave(MexicoMapZoom, file= paste0(plot_dir, "/MexicoMapZoom.jpg"), width = 12, 
 24/67*100
 6/67*100
 ```
+<p>&nbsp;</p>
+
+#### **Plot of IA & IB occurrence: **
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+head(ContE)
+nsites <- gather(ContE, key="Species", value="Presence", -c(1:2))
+nsites <- nsites[nsites$Presence==1,]
+nsites$SourceII <- tt2$SourceII[match(nsites$Species, rownames(tt2))]
+nsites <- nsites[!nsites$SourceII=="NR", ] # TRanslocated species no considered.
+sum(nsites$SourceII=="IA") # 37
+sum(nsites$SourceII=="IB") # 27
+
+```
+
 <p>&nbsp;</p>
 #### **Richness: **
 

@@ -45,7 +45,6 @@ colnames(dt)[colnames(dt) == "Agonostomus monticola"] <- "Dajaus monticola"
 dt <- dt[,order(colnames(dt))]
 dist_mat1 <- dist_mat1[order(rownames(dist_mat1)), order(colnames(dist_mat1))]
 
-
 tt2 <- tt2[order(rownames(tt2)),]
 identical(colnames(dt), colnames(dist_mat1))  # TRUE
 identical(colnames(dt), rownames(tt2))        # TRUE
@@ -72,66 +71,107 @@ Di_dim <- distinctiveness_dimensions(dt,
                                      tt2[,c(1:10)],
                                      metric="euclidean") # warnings when coms have 1 sps only
 
+
 Diig <- distinctiveness_global(dist_mat1) # global distinctiveness (regional)
 Diig$global_di_norm <- (Diig$global_di-min(Diig$global_di))/(max(Diig$global_di)-min(Diig$global_di)) # normalise
+dt1 <- as.data.frame(t(dt[1,]))
+dt1[1,] <- 1
+Dig_dimg <- distinctiveness_dimensions(as.matrix(dt1), 
+                                       tt2[,c(1:10)],
+                                       metric="euclidean") # warnings when coms have 1 sps only
 
 ###########################################################################################
 # Period & Status -------------------------------------------------------------------------
-
-# Uniqueness:
+# Uniqueness:------------------------------------------------------------------------------
 Uii$SourceII <- tt2$SourceII[match(Uii$species, rownames(tt2))]
 
-# Distinctiveness:
+# Global distinctiveness:------------------------------------------------------------------
+Diig$SourceII <- tt2$SourceII[match(Diig$species, rownames(tt2))]
+
+# Distinctiveness:-------------------------------------------------------------------------
 Dii$Period <- rep(NA, nrow(Dii))
 Dii$Period <- ifelse(rownames(Dii) %like% "HNB", "Historical", Dii$Period)
 Dii$Period <- ifelse(rownames(Dii) %like% "ContAll", "Contemporary Natives + Exotics", Dii$Period)
 sum(is.na(Dii$Period))
 
-Dii <- gather(Dii, key="Species", value="Di", -Period)
+Dii$Site <- rep(NA, nrow(Dii))
+Dii$Site <- str_split_fixed(rownames(Dii), "_", 2)[,1]
+Dii <- gather(Dii, key="Species", value="Di", -c("Period", "Site"))
 Dii <- Dii[!is.na(Dii$Di),]
-length(unique(Dii$Species)) #99
-setdiff(unique(colnames(dt)), unique(Dii$Species))
-# "Gambusia yucatana" (it means, this species only appears in coms of richness = 1)
-# Distinctiveness of this taxon cannot be calculated.
-Dii$Period <- as.factor(Dii$Period)
-Dii$Period <- recode_factor(Dii$Period, "Historical"="A) Historical", 
-                            "Contemporary Natives + Exotics"="B) Contemporary Natives + Exotics")
-
 Dii$SourceII <- tt2$SourceII[match(Dii$Species, rownames(tt2))]
 
-# Global distinctiveness:
-Diig$SourceII <- tt2$SourceII[match(Diig$species, rownames(tt2))]
+# Subsetting:
+DiiI <- subset(Dii, ! Dii$SourceII == "NR")
+DiiII <- subset(Dii, Dii$SourceII == "NR")
+
+DiiIIinsp <- DiiII %>%
+  group_by(Site, Species) %>%
+  summarise(n=n())
+
+DiiII_1 <- subset(DiiIIinsp, DiiIIinsp$n ==1)
+DiiII_2 <- subset(DiiIIinsp, DiiIIinsp$n ==2)
+
+LocE <- merge(x=DiiII_1,y=DiiII,by=c("Site", "Species"), all.x=FALSE, all.y=FALSE)
+LocNR <- merge(x=DiiII_2,y=DiiII,by=c("Site", "Species"), all.x=FALSE, all.y=FALSE)
+
+sum(LocE$Period=="Contemporary Natives + Exotics") #11 (Translocated)
+sum(LocE$Period=="Historical")   #142
+
+LocE$SourceII <- ifelse(LocE$Period=="Historical", "E", LocE$SourceII)
+LocE <- within(LocE, rm(n))
+LocNR <- within(LocNR, rm(n))
+
+Dii_v2 <- rbind(DiiI, LocNR, LocE) # 507
+# The E category contains regional and local ext, some species in both the E and NR categories.
+save(Dii_v2, file="Dii_v2.RData")
+
+length(unique(Dii_v2$Species)) #99
+setdiff(unique(colnames(dt)), unique(Dii_v2$Species))
+# "Gambusia yucatana" (it means, this species only appears in coms of richness = 1)
+# Distinctiveness of this taxon cannot be calculated.
 
 ###########################################################################################
 # Correlations: ---------------------------------------------------------------------------
-count_sps_dis <- Dii %>%
-  group_by(Species, SourceII) %>%
+count_sps_dis <- Dii_v2 %>%
+  group_by(Species) %>%
   summarise(n=n())
 range(count_sps_dis$n) # 1 37
 
 sum(count_sps_dis$n==1) #23 species
 sum(count_sps_dis$n==2) #28 species
-sum(count_sps_dis$SourceII=="E") #29
 
-sum(count_sps_dis$n[count_sps_dis$SourceII=="E"]==1) #14
-sum(count_sps_dis$n[count_sps_dis$SourceII=="E"]==2) #11
-14+11 # 25 of 29
-
-Dis_av <- Dii %>%
-  group_by(Species, SourceII) %>%
+Dis_av <- Dii_v2 %>%
+  group_by(Species) %>%
   summarise(av=mean(Di))
+Dis_av$av_norm <- (Dis_av$av-min(Dis_av$av))/(max(Dis_av$av)-min(Dis_av$av)) # normalise
 
 Uniqx <- rbind(Uii[!Uii$species == "Gambusia yucatana",], Uii[Uii$species == "Gambusia yucatana",])
 Diigx <- rbind(Diig[!Diig$species == "Gambusia yucatana",], Diig[Diig$species == "Gambusia yucatana",])
-Gy <- data.frame("Species"="Gambusia yucatana", "SourceII"="IB","av"=NA)
+Gy <- data.frame("Species"="Gambusia yucatana","av"=NA, "av_norm"=NA)
 Dis_avx <- rbind(Dis_av, Gy)
 
 identical(Dis_avx$Species, Uniqx$species) #TRUE
 identical(Dis_avx$Species, Diigx$species) #TRUE
-shapiro.test(Dis_avx$av)
-shapiro.test(Uniqx$Ui)
-shapiro.test(Diigx$global_di)
+shapiro.test(Dis_avx$av_norm)
+shapiro.test(Uniqx$Ui_norm)
+shapiro.test(Diigx$global_di_norm)
 cor(data.frame(Dis_avx$av, Uniqx$Ui, Diigx$global_di), method="spearman", use = "complete.obs")
+
+###########################################################################################
+medianUii <- Uii %>%
+  group_by(SourceII) %>%
+  summarise(med = median(Ui_norm), sd= sd(Ui_norm))
+medianUii
+
+medianDii <- Dii_v2 %>%
+  group_by(SourceII) %>%
+  summarise(med = median(Di), sd= sd(Di))
+medianDii
+
+mediangbDii <- Diig %>%
+  group_by(SourceII) %>%
+  summarise(med = median(global_di_norm), sd= sd(global_di_norm))
+mediangbDii
 
 ###########################################################################################
 # Tests -----------------------------------------------------------------------------------
@@ -147,25 +187,21 @@ plot(Uii_fit1)
 shapiro.test(residuals(Uii_fit1))
 
 Uii_fit2 <- kruskal.test(Ui~SourceII, data=Uii)
-Uii_fit2 # 0.2953
+Uii_fit2 # 0.3006
 
 # Av Distinctiveness by SourceII:---------------------------------------------------------
-Dis_av$SourceII <- as.factor(Dis_av$SourceII)
-sum(is.na(Dis_av$av)) #0
-str(Dis_av)
-
-boxplot(av ~ SourceII, data=Dis_av)
-Dii_fit1 <- aov(av ~ SourceII, data=Dis_av)
+boxplot(Di ~ SourceII, data=Dii_v2)
+Dii_fit1 <- aov(Di ~ SourceII, data=Dii_v2)
 summary(Dii_fit1)
 par(mfrow = c(2, 2))
 plot(Dii_fit1)
 shapiro.test(residuals(Dii_fit1))
 
 
-Dii_fit2 <- kruskal.test(av ~ SourceII, data=Dis_av)
+Dii_fit2 <- kruskal.test(Di ~ SourceII, data=Dii_v2)
 Dii_fit2
-pairwise.wilcox.test(Dis_av$av, Dis_av$SourceII,
-                     p.adjust.method = "none") 
+pairwise.wilcox.test(Dii_v2$Di, Dii_v2$SourceII,
+                     p.adjust.method = "none", exact=FALSE) 
 
 # Global distinctiveness by Source II:-----------------------------------------------------
 shapiro.test(residuals(aov(global_di_norm ~ SourceII, data=Diig)))
@@ -174,9 +210,9 @@ Diig_fit1
 pairwise.wilcox.test(Diig$global_di_norm, Diig$SourceII,
                      p.adjust.method = "none")
 
-p.adjust(c(0.2953, 0.02361, 3.72e-05), method = "BH")
-p1 <- c(0.047, 0.092, 0.323, 0.006, 0.011, 0.287)
-p2 <- c(0.00026, 0.03129, 0.05411, 1.3e-05, 1.8e-05, 0.02985)
+p.adjust(c(0.3006, 2.598e-09, 2.615e-05), method = "BH")
+p1 <- c(9.5e-10, 0.0011, 0.3355, 2.1e-08, 5.7e-07, 0.0198)
+p2 <- c(0.00011, 0.01639, 0.03620, 6.3e-06, 4.9e-05, 0.03255)
 p.adjust(c(p1, p2), method = "BH")
 
 ###########################################################################################
@@ -184,6 +220,7 @@ p.adjust(c(p1, p2), method = "BH")
 dev.off()
 pal3 <- c("#0072B2", "#F0E442", "darkgray")
 pal4 <- c("#0072B2","#D55E00","#E69F00","darkgray")
+pal4LD <- c("#009E73","#D55E00","#E69F00","#000000")
 
 violin_p <- function(data, x, y, pal, legend_title="legend", labx="labx", laby="laby") {
   plot <- ggplot(data, aes(x = x, y = y, fill=x)) +
@@ -207,10 +244,24 @@ ggsave(uviolin2, filename= paste0(plot_dir, "/SM/Ms/S6_UniquenessPanel.jpg"), wi
 save(uviolin2, file="uviolin2.RData")
 
 # Plots Distinctiveness -------------------------------------------------------------------
-dviolin2 <- violin_p(data=Dii, x=Dii$SourceII, y=Dii$Di,
-                     pal=pal4,
-                     legend_title = "Status",
-                     labx="Status", laby="Local distinctiveness")
+Dii_v2$SourceII[Dii_v2$SourceII=="NR"] <- "LR"
+Dii_v2$SourceII[Dii_v2$SourceII=="E"] <- "LE"
+Dii_v2$SourceII <- recode_factor(Dii_v2$SourceII, 
+                                 "LE"="LE",
+                                 "IA"="IA",
+                                 "IB"="IB",
+                                 "LR"="LR")
+dviolin2 <- ggplot(Dii_v2, aes(x = SourceII, y = Di, fill=SourceII)) +
+  geom_point(alpha=0.3)+
+  geom_violin(alpha=0.4) +
+  geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
+  xlab("") +
+  ylab("Local distinctiveness") +
+  labs(fill="Status")+
+  scale_fill_manual(values=pal4LD)+
+  theme_bw()
+print(dviolin2)
+
 ggsave(dviolin2, filename= paste0(plot_dir, "/SM/Ms/S6_LocalDisPanel.jpg"), width = 7, height = 5) 
 save(dviolin2, file="dviolin2.RData")
 
@@ -226,35 +277,36 @@ save(dgviolin2, file="dgviolin2.RData")
 ###########################################################################################
 # Assembly of final plots -----------------------------------------------------------------
 load("Main.RData")
-(panels_species <- ggarrange(Main,
+(panels_speciesII <- ggarrange(Main,
                              uviolin2,
-                             dviolin2,
                              dgviolin2,
-                             common.legend = TRUE, 
+                             dviolin2,
+                             common.legend = FALSE, # TRUE
                              legend="bottom",
                              labels = c("A)", "B)", "C)", "D)"),
                              align="hv",
                              font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
 ggsave(panels_species, filename= paste0(plot_dir, "/S6_Figure2.jpg"), width = 8, height = 8) 
+ggsave(panels_speciesII, filename= paste0(plot_dir, "/S6_Figure2II.jpg"), width = 8, height = 8) 
 
 ###########################################################################################
 # Additional SM plots: --------------------------------------------------------------------
 
 # Native remaining local distinctiveness: -------------------------------------------------
-Dii_nat <- subset(Dii, Dii$SourceII == c("NR"))
-Dii_nat$Period <- as.character(Dii_nat$Period)
-Dii_nat$Period[Dii_nat$Period=="B) Contemporary Natives + Exotics"] <- "B) Contemporary (2005)"
+#Dii_nat <- subset(Dii, Dii$SourceII == c("NR"))
+#Dii_nat$Period <- as.character(Dii_nat$Period)
+#Dii_nat$Period[Dii_nat$Period=="B) Contemporary Natives + Exotics"] <- "B) Contemporary (2005)"
 
-(dviolinNat <- ggplot(Dii_nat, aes(x = Period, y = Di, fill=Period)) +
-    geom_point(alpha=0.3)+
-    geom_violin(alpha=0.4) +
-    geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-    xlab("Native remaining") +
-    ylab("Local distinctiveness") +
-    scale_fill_manual(values=c("Lightgray", "Darkgray"))+
-    theme_bw())
+#(dviolinNat <- ggplot(Dii_nat, aes(x = Period, y = Di, fill=Period)) +
+#    geom_point(alpha=0.3)+
+#    geom_violin(alpha=0.4) +
+#    geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
+#    xlab("Native remaining") +
+#    ylab("Local distinctiveness") +
+#    scale_fill_manual(values=c("Lightgray", "Darkgray"))+
+#    theme_bw())
 
-ggsave(dviolinNat, filename= paste0(plot_dir, "/SM/Ms/S6_LocalDisPanelNR.jpg"), width = 7, height = 5) 
+#ggsave(dviolinNat, filename= paste0(plot_dir, "/SM/Ms/S6_LocalDisPanelNR.jpg"), width = 7, height = 5) 
 
 # Uniqueness dimensions:-------------------------------------------------------------------
 Ui_dim <- gather(Ui_dim, key="Trait", value="Uniqueness", -species)
@@ -268,25 +320,59 @@ Ui_dimp <- ggplot(Ui_dim, aes(x=SourceII, y=Uniqueness, fill=SourceII, color=Sou
   geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
   xlab("Status") +
   ylab("Uniqueness") +
-  labs(fill="Status")+
+  labs(fill="Status", color="Status")+
   scale_color_manual(values=pal4)+
   scale_fill_manual(values=pal4)+
   theme_bw()+
   facet_wrap(~Trait, scales = "free")
 Ui_dimp
 
-# Distinctiveness dimensions:
+# Global distinctiveness dimensions:------------------------------------------------------
+Dig_dimgI <- t(do.call(rbind, Dig_dimg))
+colnames(Dig_dimgI) <- names(Dig_dimg)
+Dig_dimgI <- as.data.frame(Dig_dimgI)
+Dig_dimgI$Species <- rownames(Dig_dimgI)
+
+Dig_dimgII <- gather(Dig_dimgI, key="Trait", value="GD", -Species)
+Dig_dimgII$SourceII <- Diig$SourceII[match(Diig$species, Dig_dimgII$Species)]
+Dig_dimgII <- Dig_dimgII[!Dig_dimgII$Trait=="Di_all",]
+
+Dig_dimp <- ggplot(Dig_dimgII, aes(x=SourceII, y=GD, fill=SourceII, color=SourceII)) +
+  geom_point(alpha=0.3)+
+  geom_violin(alpha=0.4)+
+  geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
+  xlab("Status") +
+  ylab("Global Distinctiveness") +
+  labs(fill="Status", color="Status")+
+  scale_color_manual(values=pal4)+
+  scale_fill_manual(values=pal4)+
+  theme_bw()+
+  facet_wrap(~Trait, scales = "free")
+Dig_dimp
+
+# Distinctiveness dimensions:-------------------------------------------------------------
 Di_dim <- lapply(Di_dim, as.data.frame)
 traits <- names(Di_dim)
-Di_dim2 <- lapply(Di_dim, function(x) {gather(x, key="Species", value="Distinctiveness", na.rm = TRUE)})
+Di_dim <- lapply(Di_dim, function(x) {x$siteperiod <- rownames(x); x})
+
+Di_dim2 <- lapply(Di_dim, function(x) {gather(x, key="Species", value="Distinctiveness", na.rm = TRUE, -c(101))})
 Di_dim2 <- do.call(rbind, Di_dim2)
 Di_dim2$Trait <- rep(traits, each=507)
 Di_dim2$SourceII <- rep(NA, nrow(Di_dim2))
-Di_dim2$SourceII <-  Uii$SourceII[match(Di_dim2$Species, Uii$species)]
+
+
+sort(unique(Dii_v2$Period))
+Dii_v2$Period[Dii_v2$Period=="Contemporary Natives + Exotics"] <- "ContAll"
+Dii_v2$Period[Dii_v2$Period=="Historical"] <- "HNB"
+Dii_v2$siteperiodspecies <- paste0(Dii_v2$Site, "_", Dii_v2$Period, "_", Dii_v2$Species)
+Di_dim2$siteperiodspecies <- paste0(Di_dim2$siteperiod, "_", Di_dim2$Species)
+
+Di_dim2$SourceII <-  Dii_v2$SourceII[match(Dii_v2$siteperiodspecies,
+                                           Di_dim2$siteperiodspecies)]
+
+
 Di_dim2 <- Di_dim2[!Di_dim2$Trait=="Di_all",]
-#Di_dim3 <- Di_dim2 %>%
-# group_by(Species, Trait, SourceII) %>%
-# summarise(av=mean(Distinctiveness))
+
 
 Di_dim2p <- ggplot(Di_dim2, aes(x=SourceII, y=Distinctiveness, fill=SourceII, color=SourceII)) +
   geom_point(alpha=0.3)+
@@ -294,26 +380,16 @@ Di_dim2p <- ggplot(Di_dim2, aes(x=SourceII, y=Distinctiveness, fill=SourceII, co
   geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
   xlab("Status") +
   ylab("Local distinctiveness") +
-  labs(fill="Status")+
-  scale_color_manual(values=pal4)+
-  scale_fill_manual(values=pal4)+
+  labs(fill="Status", color="Status")+
+  scale_color_manual(values=pal4LD)+
+  scale_fill_manual(values=pal4LD)+
   theme_bw()+
   facet_wrap(~Trait, scales = "free")
 Di_dim2p
 
-#Di_dim3p <- ggplot(Di_dim3, aes(x=SourceII, y=av, fill=SourceII, color=SourceII)) +
-#  geom_point(alpha=0.3)+
-# geom_violin(alpha=0.4)+
-#  geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-# xlab("Status") +
-#  ylab("Distinctiveness") +
-# scale_color_manual(values=pal4)+
-#  scale_fill_manual(values=pal4)+
-# theme_bw()+
-#  facet_wrap(~Trait)
-# Di_dim3p
 
 ggsave(Ui_dimp, filename= paste0(plot_dir, "/SM/Ms/S6_UniquenessDimensions.jpg"), width = 10, height = 8) 
+ggsave(Dig_dimp, filename= paste0(plot_dir, "/SM/Ms/S6_GlobalDisDimensions.jpg"), width = 10, height = 8)
 ggsave(Di_dim2p, filename= paste0(plot_dir, "/SM/Ms/S6_LocalDisDimensions.jpg"), width = 10, height = 8) 
 
 ###########################################################################################

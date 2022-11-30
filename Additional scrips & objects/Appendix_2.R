@@ -47,96 +47,98 @@ alpha_fd_indices10 <- mFD::alpha.fd.multidim(
   sp_faxes_coord   = coords,
   asb_sp_w         = All,
   ind_vect         = c("fdis","fori","fspe", "fide"),
-  scaling          = TRUE,
+  scaling          = TRUE, # TRUE????
   check_input      = TRUE,
   details_returned = TRUE) # All axes
 
-alpha_fd_indices4 <- mFD::alpha.fd.multidim(
-  sp_faxes_coord   = coords[ , c("PC1", "PC2", "PC3", "PC4")],
-  asb_sp_w         = All,
-  ind_vect         = c("fdis","fori","fspe", "fide"),
-  scaling          = TRUE,
-  check_input      = TRUE,
-  details_returned = TRUE) # All axes
+#alpha_fd_indices4 <- mFD::alpha.fd.multidim(
+#  sp_faxes_coord   = coords[ , c("PC1", "PC2", "PC3", "PC4")],
+#  asb_sp_w         = All,
+#  ind_vect         = c("fdis","fori","fspe", "fide"),
+#  scaling          = TRUE,
+#  check_input      = TRUE,
+#  details_returned = TRUE) # All axes
 
-# Correlations:
-cor(alpha_fd_indices10$functional_diversity_indices[,c(2:7)],
-    alpha_fd_indices4$functional_diversity_indices[,c(2:7)]) # Dispersion is highly correlated (0.98)
-
-div <- as.data.frame(alpha_fd_indices10$functional_diversity_indices[,c(1:8)])
+###########################################################################################
+# Correlations:----------------------------------------------------------------------------
+divDis <- data.frame(alpha_fd_indices10$functional_diversity_indices[,c(1:2)])
+divDis$SiteName <-  str_split_fixed(rownames(divDis),"_",2)[,1]
+divDis$Period <- str_split_fixed(row.names(divDis),"_",2)[,2]
+load("div3.RData")
+new <- merge(divDis, div3, by=c("SiteName", "Period"))
+cor(new$F0, new$fdis, method = "spearman")
 
 ###########################################################################################
 # Shape of the curve (FDis) ---------------------------------------------------------------
+divDis <- divDis[divDis$sp_richn > 1,]
 
-hnc <- subset(div, rownames(div) %like% "HNC")
-hnb <- subset(div, rownames(div) %like% "HNB")
-contN <- subset(div, rownames(div) %like% "ContN")
-contAll <- subset(div, rownames(div) %like% "ContAll")
+hnc <- subset(divDis, rownames(divDis) %like% "HNC")
+hnb <- subset(divDis, rownames(divDis) %like% "HNB")
+contN <- subset(divDis, rownames(divDis) %like% "ContN")
+contAll <- subset(divDis, rownames(divDis) %like% "ContAll")
 
 # Historical conservative:
-hnc_1 <- lm(fdis ~ sp_richn, data=hnc)
-hnc_2 <- lm(fdis ~ log(sp_richn+1), data=hnc)
+str(hnc)
 
-AIC(hnc_1, hnc_2) # Curve
+hnc_1 <- lm(fdis ~ sp_richn, data=hnc)
+hnc_2 <- lm(log(fdis) ~ log(sp_richn), data=hnc)
+summary(hnc_1)
+summary(hnc_2)
+
+AIC(hnc_1, hnc_2) 
 
 # Historical broad:
 hnb_1 <- lm(fdis ~ sp_richn, data=hnb)
-hnb_2 <- lm(fdis ~ log(sp_richn+1), data=hnb)
+hnb_2 <- lm(log(fdis) ~ log(sp_richn), data=hnb)
+summary(hnb_1)
+summary(hnb_2)
 
-AIC(hnb_1, hnb_2) # Curve
+AIC(hnb_1, hnb_2) 
 
 # Current native:
 contN_1 <- lm(fdis ~ sp_richn, data=contN)
-contN_2 <- lm(fdis ~ log(sp_richn+1), data=contN)
+contN_2 <- lm(log(fdis) ~ log(sp_richn), data=contN)
+summary(contN_1)
+summary(contN_2)
 
-AIC(contN_1, contN_2) # Curve
+AIC(contN_1, contN_2) 
 
 # Current All:
 contAll_1 <- lm(fdis ~ sp_richn, data=contAll)
-contAll_2 <- lm(fdis ~ log(sp_richn+1), data=contAll)
+contAll_2 <- lm(log(fdis) ~ log(sp_richn), data=contAll)
 
-AIC(contAll_1, contAll_2) # Curve
+AIC(contAll_1, contAll_2)
 
-# NOTE:
-# A curve is a better fit in all cases.
 
-div$Period <- rep(NA, nrow(div))
-div$Period <- ifelse(rownames(div) %like% "HNC", "A) Historical conservative", div$Period)
-div$Period <- ifelse(rownames(div) %like% "HNB", "B) Historical broad", div$Period)
-div$Period <- ifelse(rownames(div) %like% "ContN", "C) Current Native", div$Period)
-div$Period <- ifelse(rownames(div) %like% "ContAll", "D) Current Native + Exotic", div$Period)
+divDis$Period <- rep(NA, nrow(divDis))
+divDis$Period <- ifelse(rownames(divDis) %like% "HNC", "A) Historical conservative", divDis$Period)
+divDis$Period <- ifelse(rownames(divDis) %like% "HNB", "B) Historical broad", divDis$Period)
+divDis$Period <- ifelse(rownames(divDis) %like% "ContN", "C) Current Native", divDis$Period)
+divDis$Period <- ifelse(rownames(divDis) %like% "ContAll", "D) Current Native + Exotic", divDis$Period)
 
-(oFDis <- ggplot(div, aes(x=sp_richn, y=fdis, color=Period))+
+(oFDis <- ggplot(divDis, aes(x=sp_richn, y=fdis, color=Period))+
     geom_point(aes(color=Period))+
-    geom_smooth(method=lm, formula = y ~ log(x+1))+
+    geom_smooth()+
     theme_classic()+
     facet_wrap(~Period))
 
-(oFDisII <- ggplot(div, aes(x=Period, y=fdis, fill=Period))+
-    geom_violin(aes(fill=Period))+
-    geom_boxplot(aes(fill=Period), width=0.1, position=position_dodge(1))+
-    theme_classic())
-
-
 ###########################################################################################
-# F Div and identity by period ------------------------------------------------------------
-div <- gather(div, key="Metric", value="Value", -Period)
-divI <- subset(div, div$Metric  %in% c("fdis", "fori", "fspe"))
-divII <- subset(div, div$Metric %in% c("fide_PC1", "fide_PC2", "fide_PC3", "fide_PC4"))
+# Null models -----------------------------------------------------------------------------
+load("rand.RData")
+rand <- rand[, order(names(rand))]
+coords <- coords[order(rownames(coords)),]
+identical(colnames(dist_mat1), rownames(coords)) # FALSE
 
-(fmetricsI <- ggplot(divI, aes(y = Value, x = Period, color=Period)) +
-   geom_point(alpha=0.05, position=position_dodge(1))+
-   geom_violin(alpha=0.4) +
-   geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-   theme_bw()+
-   facet_wrap(~Metric)) # The current communities are the least original.
+rand_l <- split(rand, f=rownames(rand))
 
-(fmetricsI <- ggplot(divII, aes(y = Value, x = Period, color=Period)) +
-    geom_point(alpha=0.05, position=position_dodge(1))+
-    geom_violin(alpha=0.4) +
-    geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-    theme_bw()+
-    facet_wrap(~Metric)) # The current communities are the least original.
+F0null <- list()
+for (i in 1:length(rand_l)){
+  assemblage <- as.matrix(t(rand_l[[i]]))
+  T0_n <- colSums(assemblage)
+  F0_n <- FD_MLE(assemblage, dist_mat1, mean(dist_mat1[dist_mat1>0]), q=0)
+  R0_n <- (T0_n - F0_n)
+  F0null[[i]] <- cbind(T0_n, F0_n, R0_n)
+}
 
 ###########################################################################################
 # End of script ###########################################################################

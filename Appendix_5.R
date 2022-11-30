@@ -138,5 +138,5 @@ observer_groups[observer_groups=="AFE"] <- "M"
                                         alpha = 0.5, size = 3, nudge_y = 0.1, show.legend = FALSE))
 
 plot_dir <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Plots" # Dir to save main plots
-ggsave(finalp, filename = paste0(plot_dir, "/SM/Ms/TestObserver_App5.jpg"), width=10, height=8)
+ggsave(finalp, filename = paste0(plot_dir, "/SM/Thesis/TestObserver_App5.jpg"), width=10, height=8)
 

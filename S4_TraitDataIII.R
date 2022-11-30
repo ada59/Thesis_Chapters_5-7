@@ -53,20 +53,37 @@ class(tt)
 #  p.mat
 #} 
 
-C <- cor(tt)
-p.mat <- cor.mtest(tt)
+head(tt)
+hist(tt[,1])  # MBl the only strongly non-normal dis
+range(tt[,1]) # 4.1 100.0
+tt[,1] <- log(tt[,1])
+hist(tt[,1])
+colnames(tt)[colnames(tt)=="MBl"] <- "logMBl"
 
-file_path <- paste0(plot_dir, "/SM/Ms/S4_Correlationmatrix.png")
+C1 <- cor(tt)
+C2 <- cor(tt, method = "spearman")
+
+p.mat1 <- cor.mtest(tt, method = "pearson")
+p.mat2 <- cor.mtest(tt, method = "spearman", exact = FALSE)
+
+file_path <- paste0(plot_dir, "/SM/Ms/S4_PearsonCorrelationmatrix.png")
 png(height=700, width=700, file=file_path)
 
-corrplot(C, method="color", type = "lower", order = "hclust", 
-         p.mat = p.mat$p, sig.level = 0.05, insig = "blank" ,diag=FALSE)$corrPos -> p1
+corrplot(C1, method="color", type = "lower", order = "hclust", 
+         p.mat = p.mat1$p, sig.level = 0.05, insig = "blank" ,diag=FALSE)$corrPos -> p1
 text(p1$x, p1$y, round(p1$corr, 2))
 
 dev.off()
 
-# The highest positives are 0.51 between BEl & PFv and OGp & REs.
-# The highest negative is -0.5 between MBl and REs.
+file_path <- paste0(plot_dir, "/SM/Ms/S4_SpearmanCorrelationmatrix.png")
+png(height=700, width=700, file=file_path)
+
+corrplot(C2, method="color", type = "lower", order = "hclust", 
+         p.mat = p.mat2$p, sig.level = 0.05, insig = "blank" ,diag=FALSE)$corrPos -> p1
+text(p1$x, p1$y, round(p1$corr, 2))
+
+dev.off()
+
 # All traits kept.
 
 # Create trait distance matrix:------------------------------------------------------------
@@ -74,7 +91,7 @@ round(diag(cov(tt)), 2)                 # Need to scale variances.
 tt <- as.data.frame(tt)
 tt[] <- data.frame(apply(tt, 2, scale)) # Defaults are TRUE center & scale
 round(diag(cov(tt)), 2) 
-
+hist(tt[,1])
 save(tt, file="tt.RData")
 
 dist_mat1 <- as.matrix(daisy(tt, metric = "euclidean"))
@@ -173,9 +190,6 @@ tt$SourceII[tt$SourceII=="Native Remaining"] <- "NR"
 tt2 <- tt
 save(tt2, file="tt2.RData")
 
-sps_list <- data.frame("Species"=rownames(tt2), "Status"=tt2$SourceII)
-write_csv2(sps_list, file=paste0(plot_dir, "/SM/Ms/sps_list.csv"))
-
 ###########################################################################################
 # PCA:-------------------------------------------------------------------------------------
 PCA <- prcomp(tt[,c(1:10)])
@@ -273,7 +287,7 @@ eig.val <- get_eigenvalue(PCA)
 eig.val 
 
 # NOTES:
-# Dim 1 (26.2) and Dim 2 (21.9) = 48.9 %
+# Dim 1 (26.8) and Dim 2 (22.7) approx 50 %
 
 # Results for Variables
 PCAv <- get_pca_var(PCA)
@@ -281,12 +295,14 @@ PCAv$coord          # Coordinates
 PCAv$contrib        # Contributions to the PCs
 PCAv$cos2           # Quality of representation 
 
-# NOTES:
+# Contributions:
+round(PCA$rotation*100)
+# Dim 1 : REs (+), OGp (+), logMBl (-), PFv (+), BEl(+) & PFs(-)
+# Dim 2 : VEp (+), RMl (+), BLs (+), BEl(-), logMBl(+)
+
 (c1 <- fviz_contrib(PCA, choice = "var", axes = 1, top = 10)) 
-# Dim 1: PFv, RES, BEl,  OGp (Use of fin for swimming, Visual acuity, hydrodinamism and oral gape position)
 
 (c2 <- fviz_contrib(PCA, choice = "var", axes = 2, top = 10)) 
-# Dim 2:VEp, RMl, BLs (Strength of jaw, vertical eye position and shape of body)
 
 (c3 <- fviz_contrib(PCA, choice = "var", axes = 3, top = 10))
 (c4 <- fviz_contrib(PCA, choice = "var", axes = 4, top = 10))
@@ -332,7 +348,7 @@ ggsave(Main, filename = paste0(plot_dir, "/SM/Ms/S4_TraitSpacePanel.jpg"), width
 ggsave(Main_biplotB, filename = paste0(plot_dir, "/SM/Ms/S4_TraitSpacePanelVariables.jpg"), width=8, height=6)
 
 save(Main, file="Main.RData")
-save(Main, file="Main_biplotB.RData")
+save(Main_biplotB, file="Main_biplotB.RData")
 
 ggsave(vI, filename = paste0(plot_dir, "/SM/Ms/S4_variables_1_2.jpg"), width=6, height=5)
 ggsave(c1, filename = paste0(plot_dir, "/SM/Ms/S4_contributions_1.jpg"), width=5, height=3)
@@ -362,9 +378,9 @@ pairwise.wilcox.test(dt_tests$Dim2,dt_tests$SourceII,
                      p.adjust.method = "none") 
 # Both IA and E are different from the other groups (corr BH)
 # Another adjustment since it's two models?
-p0 <- c(9.39e-05,2.012e-05)
-p1 <- c(9.8e-07, 0.86786, 0.33324, 0.00012, 1.5e-08, 0.43653)
-p2 <- c(0.03192, 0.00187, 0.00042, 1.3e-05, 0.00029, 0.79998)
+p0 <- c(0.0001049,0.0001461)
+p1 <- c(1.6e-06, 0.91, 0.43, 7.5e-05, 1.5e-08, 0.44)
+p2 <- c(0.33507, 0.00228, 0.00048, 4.4e-05, 0.00484, 0.72519)
 
 p.adjust(c(p0), method="BH")
 p.adjust(c(p1, p2), method = "BH")
@@ -402,7 +418,14 @@ sum(is.na(tt$Family))
                     addEllipses = TRUE, # TRUE for concentration ellipses
                    ellipse.type = "convex"
 ))
+
 ggsave(iF, filename = paste0(plot_dir, "/SM/Ms/S4_family_1_2.jpg"), width=6, height=5)
+
+# Supplementary material species list:
+
+sps_list <- data.frame("Family"=tt$Family, "Species"=rownames(tt), 
+                       "Status"=tt$SourceII, "Source Traits"=rep("Brosse et al., 2021", nrow=tt)) # To indicate those measured by me manually
+write_csv2(sps_list, file=paste0(plot_dir, "/SM/Ms/S4_sps_list.csv"))
 
 ###########################################################################################
 # End of script ###########################################################################
