@@ -16,7 +16,6 @@ library(mFD)
 library(gridExtra)
 library(fishtree)
 library(vegan)
-library(pairwiseAdonis)
 library(ggpubr)
 library(grid)
 library(ggforce)
@@ -123,6 +122,7 @@ int <- sort(unique(setdiff(names(ContE), names(HNB)))) # 22
 
 # Any species translocated?
 intersect(names(ContE), names(HNB))
+intersect(names(ContE), nat)
 "Poecilia mexicana" %in% names(HNB) #FALSE
 # In NDT67: only as exotic in manantial puerta del río
 
@@ -135,7 +135,7 @@ intersect(names(ContE), names(HNB))
 
 intersect(names(ContE), names(HNB)) %in% nat
 intersect(names(ContE), names(HNB)) %in% ext 
-# Chapalichthys encaustus translocated in one site but extipated from its native range
+# Chapalichthys encaustus translocated in one site but extirpated from its native range
 
 tt$Status <- rep(NA, nrow(tt))
 tt$Status <- ifelse(rownames(tt) %in% nat, "Native Remaining", tt$Status)
@@ -212,6 +212,7 @@ save(coords, file="coords.RData")
                     repel = TRUE
 ))
 
+
 (iII <- fviz_pca_ind(PCA,
                      axes = c(3,4),
                      col.ind = "cos2", # Color by the quality of representation
@@ -247,6 +248,8 @@ save(coords, file="coords.RData")
                        align="hv",
                        font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
 
+
+ggsave(iI, filename = paste0(plot_dir, "/SM/Thesis/S4_2D_individuals.jpg"), width=10, height=10)
 ggsave(panels_v, filename = paste0(plot_dir, "/SM/Thesis/S4_panels_variables.jpg"), width=9, height=5)
 
 # Biplots:
@@ -364,7 +367,7 @@ Dim1fit <- aov(Dim1 ~ SourceII, data=dt_tests)
 shapiro.test(residuals(Dim1fit))
 
 Dim2fit <- aov(Dim2 ~ SourceII, data=dt_tests)
-shapiro.test(residuals(Dim2fit)) # 3.821e-07
+shapiro.test(residuals(Dim2fit)) # 5.14e-07
 
 Dim1fit_KW <- kruskal.test(Dim1 ~ SourceII, data=dt_tests)
 Dim1fit_KW
@@ -378,9 +381,9 @@ pairwise.wilcox.test(dt_tests$Dim2,dt_tests$SourceII,
                      p.adjust.method = "none") 
 # Both IA and E are different from the other groups (corr BH)
 # Another adjustment since it's two models?
-p0 <- c(0.0001049,0.0001461)
-p1 <- c(1.6e-06, 0.91, 0.43, 7.5e-05, 1.5e-08, 0.44)
-p2 <- c(0.33507, 0.00228, 0.00048, 4.4e-05, 0.00484, 0.72519)
+p0 <- c(0.0001048,0.0001454)
+p1 <- c(1.6e-06, 0.91, 0.44, 7.5e-05, 1.5e-08, 0.43)
+p2 <- c(0.37325, 0.00206, 0.00048, 4.4e-05, 0.00484, 0.72519)
 
 p.adjust(c(p0), method="BH")
 p.adjust(c(p1, p2), method = "BH")
@@ -391,7 +394,9 @@ p.adjust(c(p1, p2), method = "BH")
 # Additional supplementary plot: ----------------------------------------------------------
 # PCA results by Family.
 tt$Family <- rep(NA, nrow(tt))
-tt$Family <- tax_name(rownames(tt), get = "family", db = "ncbi")$family
+tax_name("Poecilia reticulata", get="family", db="ncbi")
+
+tt$Family <- tax_name(rownames(tt), get = "family", db = "ncbi")$family # Problem with this!!!
 
 sum(is.na(tt$Family)) # 14
 rownames(tt)[is.na(tt$Family)]

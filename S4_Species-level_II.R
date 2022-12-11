@@ -67,6 +67,7 @@ Ui_dim <- uniqueness_dimensions(dt,
 
 Dii <- distinctiveness(dt, dist_matrix = dist_mat1) # distinctiveness (local)
 Dii <- as.data.frame(Dii)
+warnings()
 Di_dim <- distinctiveness_dimensions(dt, 
                                      tt2[,c(1:10)],
                                      metric="euclidean") # warnings when coms have 1 sps only
@@ -97,6 +98,7 @@ sum(is.na(Dii$Period))
 Dii$Site <- rep(NA, nrow(Dii))
 Dii$Site <- str_split_fixed(rownames(Dii), "_", 2)[,1]
 Dii <- gather(Dii, key="Species", value="Di", -c("Period", "Site"))
+Dii[is.nan(Dii$Di),]  # Take into account when classifying LE, LR & IB
 Dii <- Dii[!is.na(Dii$Di),]
 Dii$SourceII <- tt2$SourceII[match(Dii$Species, rownames(tt2))]
 
@@ -114,15 +116,19 @@ DiiII_2 <- subset(DiiIIinsp, DiiIIinsp$n ==2)
 LocE <- merge(x=DiiII_1,y=DiiII,by=c("Site", "Species"), all.x=FALSE, all.y=FALSE)
 LocNR <- merge(x=DiiII_2,y=DiiII,by=c("Site", "Species"), all.x=FALSE, all.y=FALSE)
 
-sum(LocE$Period=="Contemporary Natives + Exotics") #11 (Translocated)
+sum(LocE$Period=="Contemporary Natives + Exotics") # Some Translocated
 sum(LocE$Period=="Historical")   #142
 
 LocE$SourceII <- ifelse(LocE$Period=="Historical", "E", LocE$SourceII)
+LocE$SourceII <- ifelse(LocE$Period=="Contemporary Natives + Exotics", "IB", LocE$SourceII)
+LocE$SourceII <- ifelse(LocE$Species=="Chirostoma jordani" & LocE$Site=="Zumpango Lake", "NR", LocE$SourceII)
+LocE$SourceII <- ifelse(LocE$Species=="Girardinichthys viviparus" & LocE$Site=="Zempoala Lagoon", "NR", LocE$SourceII)
+LocE$SourceII <- ifelse(LocE$Species=="Xenoophorus captivus" & LocE$Site=="Stream at Agua de Enmedio", "NR", LocE$SourceII)
+
 LocE <- within(LocE, rm(n))
 LocNR <- within(LocNR, rm(n))
 
 Dii_v2 <- rbind(DiiI, LocNR, LocE) # 507
-# The E category contains regional and local ext, some species in both the E and NR categories.
 save(Dii_v2, file="Dii_v2.RData")
 
 length(unique(Dii_v2$Species)) #99
@@ -187,7 +193,7 @@ plot(Uii_fit1)
 shapiro.test(residuals(Uii_fit1))
 
 Uii_fit2 <- kruskal.test(Ui~SourceII, data=Uii)
-Uii_fit2 # 0.3006
+Uii_fit2 # 0.3
 
 # Av Distinctiveness by SourceII:---------------------------------------------------------
 boxplot(Di ~ SourceII, data=Dii_v2)
@@ -210,8 +216,8 @@ Diig_fit1
 pairwise.wilcox.test(Diig$global_di_norm, Diig$SourceII,
                      p.adjust.method = "none")
 
-p.adjust(c(0.3006, 2.598e-09, 2.615e-05), method = "BH")
-p1 <- c(9.5e-10, 0.0011, 0.3355, 2.1e-08, 5.7e-07, 0.0198)
+p.adjust(c(0.3018, 2.667e-09, 2.615e-05), method = "BH")
+p1 <- c(1.0e-09, 0.0036, 0.3596, 6.4e-08, 5.3e-07, 0.0475)
 p2 <- c(0.00011, 0.01639, 0.03620, 6.3e-06, 4.9e-05, 0.03255)
 p.adjust(c(p1, p2), method = "BH")
 
@@ -269,7 +275,7 @@ save(dviolin2, file="dviolin2.RData")
 dgviolin2 <- violin_p(data=Diig, x=Diig$SourceII, y=Diig$global_di_norm,
                      pal=pal4,
                      legend_title = "Status",
-                     labx="Status", laby="Global distinctiveness")
+                     labx="", laby="Global distinctiveness")
 
 ggsave(dgviolin2, filename= paste0(plot_dir, "/SM/Ms/S6_GlobDisPanel.jpg"), width = 7, height = 5) 
 save(dgviolin2, file="dgviolin2.RData")
@@ -277,16 +283,16 @@ save(dgviolin2, file="dgviolin2.RData")
 ###########################################################################################
 # Assembly of final plots -----------------------------------------------------------------
 load("Main.RData")
-(panels_speciesII <- ggarrange(Main,
+(panels_species <- ggarrange(Main,
                              uviolin2,
                              dgviolin2,
                              dviolin2,
-                             common.legend = FALSE, # TRUE
+                             common.legend = TRUE, # FALSE (Then panels_speciesII)
                              legend="bottom",
                              labels = c("A)", "B)", "C)", "D)"),
                              align="hv",
                              font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
-ggsave(panels_species, filename= paste0(plot_dir, "/S6_Figure2.jpg"), width = 8, height = 8) 
+ggsave(panels_species, filename= paste0(plot_dir, "/S6_Figure2.jpg"), width = 8, height = 8) # True common legend
 ggsave(panels_speciesII, filename= paste0(plot_dir, "/S6_Figure2II.jpg"), width = 8, height = 8) 
 
 ###########################################################################################
@@ -318,7 +324,7 @@ Ui_dimp <- ggplot(Ui_dim, aes(x=SourceII, y=Uniqueness, fill=SourceII, color=Sou
   geom_point(alpha=0.3)+
   geom_violin(alpha=0.4)+
   geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-  xlab("Status") +
+  xlab("") +
   ylab("Uniqueness") +
   labs(fill="Status", color="Status")+
   scale_color_manual(values=pal4)+
@@ -341,7 +347,7 @@ Dig_dimp <- ggplot(Dig_dimgII, aes(x=SourceII, y=GD, fill=SourceII, color=Source
   geom_point(alpha=0.3)+
   geom_violin(alpha=0.4)+
   geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-  xlab("Status") +
+  xlab("") +
   ylab("Global Distinctiveness") +
   labs(fill="Status", color="Status")+
   scale_color_manual(values=pal4)+
@@ -378,7 +384,7 @@ Di_dim2p <- ggplot(Di_dim2, aes(x=SourceII, y=Distinctiveness, fill=SourceII, co
   geom_point(alpha=0.3)+
   geom_violin(alpha=0.4)+
   geom_boxplot(alpha=0.5, width=0.1, position=position_dodge(1))+
-  xlab("Status") +
+  xlab("") +
   ylab("Local distinctiveness") +
   labs(fill="Status", color="Status")+
   scale_color_manual(values=pal4LD)+

@@ -56,7 +56,7 @@ library(data.table)
 #### **Read data: **
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 rm(list=ls())
-locs <- read.csv2("locs_georeferidas.csv", h=T)               # Coordinates data sheet
+locs <- read.csv2("locs_georeferidas.csv", h=T)                # Coordinates data sheet
 dtUP <- read_excel("TODO_peces agosto 2010_PGM_Comments.xlsx") # Most up to date data file (Nov 2021)
 ```
 <p>&nbsp;</p>
@@ -794,6 +794,10 @@ NDT67 <- rbind(NDT53, Excluded)
 
 save(NDT67, file="NDT67.RData")
 write.csv2(NDT67, file="NDT67.csv")
+
+list14 <- anti_join(NDT67, NDT53)
+save(list14, file="list_14.RData")
+write.csv2(list14, file="list14.csv")
 ```
 <p>&nbsp;</p>
 

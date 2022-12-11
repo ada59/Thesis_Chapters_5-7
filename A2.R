@@ -14,8 +14,8 @@ myd <- getwd()
 plot_dir <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Plots" # Dir to save main plots
 
 # Community data:-------------------------------------------------------------------------
-load(paste0(myd, "/tt.RData"))  # Trait data matrix
-load("ls.RData")                # List of sites where to compute FD (already vector, but names in the same order)
+load(paste0(myd, "/tt.RData"))    # Trait data matrix
+load("lsS5.RData")                # List of sites where to compute FD (already vector, but names in the same order)
 
 # Functions:------------------------------------------------------------------------------
 # FD and TD (Hill numbers) use the same units and TD is always greater than or equal to FD
@@ -42,18 +42,17 @@ list_dists <- lapply(list_mats, function(x) {as.matrix(daisy(x, metric = "euclid
 list_distsn <- lapply(list_dists, function(x) {(x - min(x)) / (max(x) - min(x))})
 
 # Compute FD:-----------------------------------------------------------------------------
-class(ls[[1]])
+class(lsS5[[1]])
 list_sens <- list()
 for (i in 1:length(list_distsn)){
   dist_mat <- list_distsn[[i]]
-  FD <- lapply(ls, function(x) {FD_MLE(x, dist_mat, mean(dist_mat[dist_mat>0]), 0)}) # trait diversity
+  FD <- lapply(lsS5, function(x) {FD_MLE(x, dist_mat, mean(dist_mat[dist_mat>0]), 0)}) # trait diversity
   list_sens[[i]] <- as.data.frame(do.call(rbind, FD))
 }
-
 
 # Correlations:---------------------------------------------------------------------------
 dt <- as.data.frame(do.call(cbind, list_sens))
 names(dt) <- names(list_distsn)
 
-min(cor(dt, method = "pearson"))  # 0.9868573
-min(cor(dt, method = "spearman")) # 0.982142
+min(cor(dt, method = "pearson"))  # 0.9867384
+min(cor(dt, method = "spearman")) # 0.9822769

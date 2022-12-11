@@ -19,7 +19,6 @@ load(paste0(myd, "/NDT53.RData")) # Raw data (53)
 load(paste0(myd, "/NDT67.RData")) # Raw data (67)
 load(paste0(myd, "/tax.RData"))   # List of species names & taxonomic updates
 
-
 ###########################################################################################
 # 1) Create Historical & Contemporary Comm Matrices:---------------------------------------
 dim(NDT67)
@@ -102,7 +101,7 @@ save(HNC, file=paste0(myd, "/HNC.RData"))
 save(HNB, file=paste0(myd, "/HNB.RData"))
 save(HE, file=paste0(myd, "/HE.RData"))
 save(ContN, file=paste0(myd, "/ContN.RData"))
-save(ContE, file=paste0(myd, "/ContE.RData")) # Considering all 67 sites.
+save(ContE, file=paste0(myd, "/ContE.RData")) 
 
 
 # 2) Taxonomic updates in species names: -------------------------------------------------
@@ -123,6 +122,38 @@ NDT67$SiteNameE[NDT67$HistoricalNatBroad %like% "jordani"]   #13
 
 sum(HNB$`Chirostoma jordani`==1) # 15= 13 + 2, OK
 
+# 3) Data formatting for assemblage-level analysis:--------------------------------------
+ContAll <- full_join(ContN, ContE, by=c("SiteNameE", "DrainageBasinE"))
+names(ContAll)
+
+ContAll$`Goodea atripinnis`<- ContAll$`Goodea atripinnis.x`+ ContAll$`Goodea atripinnis.y`
+ContAll$`Poecilia butleri`<- ContAll$`Poecilia butleri.x`+ ContAll$`Poecilia butleri.y`
+ContAll$`Poecilia sphenops`<- ContAll$`Poecilia sphenops.x`+ ContAll$`Poecilia sphenops.y`
+ContAll <- ContAll[, ! names(ContAll) %in% c("Goodea atripinnis.x", "Goodea atripinnis.y",
+                                             "Poecilia butleri.x", "Poecilia butleri.y",
+                                             "Poecilia sphenops.x", "Poecilia sphenops.y")]
+
+sum(is.na(ContAll[,-c(1:2)]))
+ContAll[is.na(ContAll)] <- 0
+sum(is.na(ContAll[,-c(1:2)]))
+save(ContAll, file="ContAll.RData")
+
+l <- bind_rows(HNC, HNB, ContN, ContAll)
+l[is.na(l)] <- 0
+sum(is.na(l)) # 0
+
+l$Period <- rep(c("HNC", "HNB", "ContN", "ContAll"), each=67)
+All  <- l
+save(All, file="All.RData")
+
+rownames(l) <- paste0(l$SiteNameE, "_", l$Period)
+l <- within(l, rm(SiteNameE, DrainageBasinE, Period))
+l <- l[, order(names(l))]
+
+str(l)
+
+ls <- split(l, rownames(l)) # 67*4 = 268
+save(ls, file="ls.RData")
 
 ###########################################################################################
 # End of script ###########################################################################
