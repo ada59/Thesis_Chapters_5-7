@@ -17,13 +17,13 @@ text-align: justify}
 
 This dataset represents the biodiversity of freshwater fish assemblages along the Trans‐Mexican Volcanic Belt, in Central Mexico. This region is the main area of distribution of the Goodeidae, a freshwater fish family endemic of Mexico.
 <p>&nbsp;</p>
-The dataset contains fish incidence (i.e. presence/absence) data from two time periods: historical - prior to 1989 - and contemporary - year 2005- for a total of 53 sites. These sites represent locations where species in the Goodeidae family have been present in either one or both time periods.
+The dataset contains fish incidence (i.e. presence/absence) data from two time periods: historical - prior to 1989 - and contemporary - year 2005-. The sites were selected to represent the main area of occurrence of the fish in the family Goodeidae.
 <p>&nbsp;</p>
-Historical period: catalog data records of fish incidence were compiled from the collection of the Zoology Museum of the University of Michigan. The compiled fish incidence reports span over a century. The catalog records were completed using information on fish distributions available in the book: Freshwater Fishes of México (Miller, 2005), and local knowledge of the authors (Gesundheit and Mac??as Garcia, 2018). 
+Historical period: catalog data records of fish incidence were compiled, mainly, from the collection of the Zoology Museum of the University of Michigan. The compiled fish incidence reports span over ~130 y. The catalog records were completed using information on fish distributions available in the book: Freshwater Fishes of México (Miller, 2005), and local knowledge of the authors (Gesundheit and Macias Garcia, 2018). 
 <p>&nbsp;</p>
-Contemporary period (i.e 2005 survey): The aim of this survey was to obtain a complete inventory of all fish present in each sampling location. Sampling took place always during daylight hours and in 13 different trips over the course of the year 2005. The sampling techniques used included seining (4m2 seine net, 4mm mesh size), trapping (40‐cm‐long minnow traps, 5‐mm mesh size), and setting a gill net (20‐m2 gill net, mesh sizes of 1.3, 5.7, 7.6, and 8.9 cm). These methods were combined in order to sample fish of different sizes and living in different microhabitats. Sampling effort was adapted to the area and characteristics of each site. For more information, see Gesundheit and Mac??as Garcia (2018).
+Contemporary period (i.e 2005 survey): The aim of this survey was to obtain a complete inventory of all fish present in each sampling location. Sampling took place always during daylight hours and in 13 different trips over the course of the year 2005. The sampling techniques used included seining (4m2 seine net, 4mm mesh size), trapping (40‐cm‐long minnow traps, 5‐mm mesh size), and setting a gill net (20‐m2 gill net, mesh sizes of 1.3, 5.7, 7.6, and 8.9 cm). These methods were combined in order to sample fish of different sizes and living in different habitats. Sampling effort was adapted to the area and characteristics of each site in order to maximise the probabibility of sampling all species present. For more information, see Gesundheit and Macias Garcia (2018).
 <p>&nbsp;</p>
-Gesundheit, P, Mac??as Garcia, C. The role of introduced species in the decline of a highly endemic fish fauna in Central Mexico. Aquatic Conserv: Mar Freshw Ecosyst. 2018; 28: 1384– 1395.
+Gesundheit, P, Macias Garcia, C. The role of introduced species in the decline of a highly endemic fish fauna in Central Mexico. Aquatic Conserv: Mar Freshw Ecosyst. 2018; 28: 1384– 1395.
 https://doi.org/10.1002/aqc.2927
 <p>&nbsp;</p>
 Comments:
@@ -56,8 +56,9 @@ library(data.table)
 #### **Read data: **
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 rm(list=ls())
-locs <- read.csv2("locs_georeferidas.csv", h=T)                # Coordinates data sheet
-dtUP <- read_excel("TODO_peces agosto 2010_PGM_Comments.xlsx") # Most up to date data file (Nov 2021)
+original_data_path <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original"
+locs <- read.csv2(file=paste0(original_data_path, "/locs_georeferidas.csv"), h=T) # Coordinates 
+dtUP <- read_excel("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original/TODO_peces agosto 2010_PGM_Comments.xlsx") # Data file 
 ```
 <p>&nbsp;</p>
 #### **Data formatting:**
@@ -76,7 +77,7 @@ dtUP <- dtUP[!is.na(dtUP$Localidad),]
 head(dtUP, 2L)
 
 # Modify some names with special characters:
-names(dtUP) <- sapply(names(dtUP), function(x) stri_trans_general(x, id = "Latin-ASCII")) # Remove Spanish language accents
+names(dtUP) <- sapply(names(dtUP), function(x) stri_trans_general(x, id = "Latin-ASCII")) 
 
 names(dtUP)[names(dtUP)=="Cuenta...9"] <- "CountHistNatCatalog"        # Native sps count Historical Catalog Records
 names(dtUP)[names(dtUP)=="Cuenta...11"] <- "CountHistNatBroad"         # Native sps count Historical Broad Sense (Reconstruction)
@@ -143,7 +144,7 @@ MatchLoc <- ClosestMatch(dtUP$Localidad, locs$LocalidadII)
 new_matches <- data.frame(dtUP$Localidad, MatchLoc) # OK
 ```
 <p>&nbsp;</p>
-Create a final dataframe and add all biological information. 
+Create a final dataframe and add all information. 
 <p>&nbsp;</p>
 Translate variable names into English.
 
@@ -164,11 +165,22 @@ identical(dtUP$Localidad, NDT$X4) #TRUE, same order
 NDT <- data.frame(NDT, dtUP[,5:26])
 names(NDT) <- c("Trip", "Month", "Year", "SiteName", "DrainageBasin", "SiteNameII", "Latitude", "Longitude", names(dtUP[,5:26]))
 
-names(NDT) <- plyr::revalue(names(NDT),c("NativosEsperadossegunno.decatalogo"="HistoricalNatCatalog","NativosEsperadosampliado"="HistoricalNatBroad","ExoticosEsperadosNEODAT"="HistoricalExotics","fechadecolecta"="DateCollected","no.decolectas"="NumberCollections",
-"nativosnoesperados?"="NonExpectedNat?","nativosnoesperados"="NonExpectedNat","mismasriquezas"="SameRichness","ExoticosEncontrados"="ExoticsFound2005","Datosanecdoticos"="Anectodic", "ExtintosoExtirpadosenlaLocalidad"="Extint/ExtirpatedInLoc","Notas"="Comments",
-"NativosEncontrados2005"="NativeFound2005","enc/esp"="RatioFound/Expected"))
+names(NDT) <- plyr::revalue(names(NDT),c("NativosEsperadossegunno.decatalogo"="HistoricalNatCatalog",
+                                         "NativosEsperadosampliado"="HistoricalNatBroad",
+                                         "ExoticosEsperadosNEODAT"="HistoricalExotics",
+                                         "fechadecolecta"="DateCollected",
+                                         "no.decolectas"="NumberCollections",
+                                         "nativosnoesperados?"="NonExpectedNat?",
+                                         "nativosnoesperados"="NonExpectedNat",
+                                         "mismasriquezas"="SameRichness",
+                                         "ExoticosEncontrados"="ExoticsFound2005",
+                                         "Datosanecdoticos"="Anectodics", 
+                                         "ExtintosoExtirpadosenlaLocalidad"="Extint/ExtirpatedInLoc",
+                                         "Notas"="Comments",
+                                         "NativosEncontrados2005"="NativeFound2005",
+                                         "enc/esp"="RatioFound/Expected"))
 
-NDT <- NDT %>% retype()
+
 str(NDT)
 ```
 <p>&nbsp;</p>
@@ -262,7 +274,7 @@ NDT$SiteType <- ifelse(NDT$SiteName %in% c("Texcoco 1", "Texcoco 2", "Teotihuaca
                                            "presa El Gigante", 
                                            "rio Turbio cerca de Manuel Doblado",
                                            "rio Turbio cerca de Cueramaro",
-                                           "rio Turbio en San Juan de la Puerta"), "Not habitable",NDT$SiteType) # These include localities that have ceased to exist, that were found dry or with foul water.
+                                           "rio Turbio en San Juan de la Puerta"), "Not habitable", NDT$SiteType) # These include localities that have ceased to exist, that were found dry or with foul water.
 
 sum(is.na(NDT$SiteType)) # OK
 # NA: rio en 6 de Enero.
@@ -272,7 +284,7 @@ sum(is.na(NDT$SiteType)) # OK
 ```
 <p>&nbsp;</p>
 * Revise temporal and spatial data:
-    * Data were collected in multiple fieldwork trips during 2005 except for May and August (Gesundheit and Mac??as Garcia, 2018)
+    * Data were collected in multiple fieldwork trips during 2005 except for May and August (Gesundheit and Macias Garcia, 2018)
     * Coordinates fall in the correct geographic area.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results=FALSE}
@@ -284,6 +296,9 @@ sort(unique(NDT$Year))
 world <- getMap(resolution = "low")
 Mexmap <- "Mexico"
 Mex <- world[world@data$ADMIN %in% "Mexico", ]
+
+NDT$Longitude <- as.numeric(NDT$Longitude)
+NDT$Latitude <- as.numeric(NDT$Latitude)
 
 range(NDT$Longitude) # Rio Barraquitas missing (-)
 NDT$Longitude[NDT$SiteName=="rio Barranquitas"] <- NDT$Longitude[NDT$SiteName=="rio Barranquitas"]*(-1)
@@ -307,8 +322,7 @@ range(NDT$Longitude) # -104.90  -98.45
     * A. regalis (?) in "manantial/balneario en Tocumbo"
 * Add a few species observations:
     * Gambusia senilis considered native in "manantial en 27 de noviembre" despite the records from the historical collectors Humphries y Smith. Miller mentions similar populations possibly of G senilis in the area and, in 2005, the sps was found in two close reservoirs, so it was considered more likely that the species was native and not translocated in this locality.
-    * Herichthys cf cyanoguttatus was found in "el manantial en Puerta del Rio" and was considered an introduced species. According to Miller, the sps has been translocated but there are also populations with undetermined taxonomic status. Due to the uncertainty with this one record we removed it from the dataset, also following (Gesundheit and Macias Garcia, 2018).
-
+  
 
 ```{r}
 # HistoricalNatCatalog:
@@ -320,12 +334,10 @@ NDT$HistoricalNatBroad[NDT$SiteName=="manantial/balneario en Tocumbo"] <- "G. at
 
 # Check G. cf. senilis (manantial en 27 de noviembre):
 NDT$HistoricalNatCatalog[NDT$SiteName=="manantial en 27 de Nov."]
+NDT$HistoricalNatCatalog[NDT$SiteName=="manantial en 27 de Nov."] <- "C. lateralis, C. meeki, G. cf. senilis, M. mezquital"
 NDT$HistoricalNatBroad[NDT$SiteName=="manantial en 27 de Nov."]
 NDT$HistoricalExotics[NDT$SiteName=="manantial en 27 de Nov."]
 
-# Remove "Herichthys cf cyanoguttatus":
-NDT$ExoticsFound2005[NDT$SiteName=="manantial en Puerta del Rio"]
-NDT$ExoticsFound2005[NDT$SiteName=="manantial en Puerta del Rio"] <- "Oreochromis sp., P. mexicana"
 ```
 <p>&nbsp;</p>
 Translate site & basin Spanish names according to Gesundheit & Macias-Garcia (2018):
@@ -342,18 +354,18 @@ NDT$DrainageBasinE <- plyr::revalue(NDT$DrainageBasin, c("alto Lerma"="Upper Ler
                                                         "lago de Cuitzeo"="Lake Cuitzeo",
                                                         "lago de Patzcuaro"="Lake Patzcuaro",
                                                         "lago de Yuriria"="Lake Yuriria",
-                                                        "lagunas de Sayula"="Sayula lagoons",
+                                                        "lagunas de Sayula"="Sayula Lagoons",
                                                         "medio Lerma"="Middle Lerma",
                                                         "rio Ameca"="Ameca River",
                                                         "rio Armeria"="Armeria River",
                                                         "rio Balsas"="Balsas River",
                                                         "rio Cihuatlan"="Cihuatlan River",
                                                         "rio Cuitzmala"="Cuitzmala River",
-                                                        "rio Gde. de Santiago"="Grande de Santiago",
-                                                        "rio Naranjo - Coahuayana"="Coahuayana River",
+                                                        "rio Gde. de Santiago"="Grande de Santiago River",
+                                                        "rio Naranjo - Coahuayana"="Naranjo - Coahuayana River",
                                                         "rio Panuco"="Panuco River",
                                                         "rio Purificacion"="Purificacion River",
-                                                        "rio San Pedro Mezquital"="San Pedro Mezquital", "bajo Lerma"="Lower Lerma", "lago de Zirahuen"="Lake Zirahuen"))
+                                                        "rio San Pedro Mezquital"="San Pedro Mezquital River", "bajo Lerma"="Lower Lerma", "lago de Zirahuen"="Lake Zirahuen"))
 sort(unique(NDT$DrainageBasinE))
 
 sort(unique(NDT$SiteName))
@@ -395,7 +407,7 @@ NDT$SiteNameE <- plyr::revalue(NDT$SiteName, c("arroyo El Conejo"="El Conejo Str
                                                "rio de La Pola"="De La Pola River",
                                                "rio El Huizcolote"="El Huizcolote River",
                                                "rio El Mimbre"="El Mimbre River",
-                                               "rio Gde. de Santiago en Ocotlan"="Gde. de Santiago River at Ocotlan",
+                                               "rio Gde. de Santiago en Ocotlan"="Grande de Santiago River at Ocotlan",
                                                "rio Higuerilla"="Higuerilla River",
                                                "rio La Eca"="La Eca River",
                                                "rio Lerma cerca de Solis"="Lerma River close to Solis",
@@ -416,19 +428,22 @@ sort(unique(NDT$SiteNameE))
 
 
 ```{r, echo=TRUE}
-save(NDT, file="NDT.RData")
-write.csv2(NDT, file="NDT.csv")
+path_lists <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+save(NDT, file=paste0(path_lists, "/NDT.RData"))
+write.csv2(NDT, file=paste0(path_lists, "/NDT.csv"))
 ```
 <p>&nbsp;</p>
 #### **Taxonomic updates**
-Taxonomic updates are made using the list of freshwater fishes from Mexico in FishBase (Froese & Pauly, 2022), Freshwater Fishes of México (Miller, 2005) and the Global Biodiversity Information Facility (GBIF).
-
+Taxonomic updates are made using the Eschmeyer's Catalog of Fishes - version of 4 April 2023.
+https://www.calacademy.org/scientists/projects/eschmeyers-catalog-of-fishes
 
 ```{r, echo=FALSE, results=TRUE}
 # Manual match, short to "genus species" format
-tax <- data.frame(matrix(ncol=8, nrow = 198))
-names(tax) <- c("Short", "Short2", "Genus_species", "Update1", "Update2", "Source1", "Source2", "Final")
-tax$Short <- as.vector(sort(unique(unlist(lapply(NDT[,c(12,14,17,20,25)],function (x) strsplit(x,","))))))
+count_unique <- as.vector(sort(unique(unlist(lapply(NDT[,c(12,14,17,20,25,28)], function (x) strsplit(x,",")))))) # 205
+
+tax <- data.frame(matrix(ncol=7, nrow = 205))
+names(tax) <- c("Short", "Short2", "Genus_species", "Synonym", "Update", "Update_comment", "Genus_species (ECF)")
+tax$Short <- as.vector(sort(unique(unlist(lapply(NDT[,c(12,14,17,20,25,28)],function (x) strsplit(x,","))))))
 tax$Short2 <- tax$Short
 tax$Short2 <- gsub("[[:punct:]]", " ", tax$Short2)               # Remove special characters
 tax$Short2 <- sub("^\\s+|\\s+$", "", tax$Short2)                 # Remove initial and final spaces
@@ -438,7 +453,10 @@ tax <- with(tax,  tax[order(Short2) , ])
 tax$Genus_species <- tax$Short2
 tax$Genus_species <- ifelse(tax$Short2=="", NA, tax$Genus_species)
 
-tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyanax fasciatus", # There was some taxonomic uncertainty with this record. Currently in the locality it is considerd as A. mexicanus (indicated in updates)
+sort(unique(tax$Short2))
+
+tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   dugesii"="Allotoca dugesii",
+                                                        "A   fasciatus "="Astyanax fasciatus", 
                                                 "A  aeneus"="Astyanax aeneus",
                                                 "A  aphanea"="Algansea aphanea",
                                                 "A  balsana"="Atherinella balsana",
@@ -448,6 +466,7 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyan
                                                 "A  goslinei"="Allotoca goslinei",
                                                 "A  hubbsi"="Allodontichthys hubbsi",
                                                 "A  maculata"="Allotoca maculata",
+                                                "A  meeki"="Allotoca meeki",
                                                 "A  mexicanus"="Astyanax mexicanus",
                                                 "A  monticola"="A monticola", 
                                                 # Not defined yet (2 sps with the same code)
@@ -457,28 +476,37 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyan
                                                 "A  robustus"="Alloophorus robustus",
                                                 "A  robustus "="Alloophorus robustus",
                                                 "A  sallaei"="Aztecula sallaei",
+                                                "A  splendens"="Ameca splendens",
                                                 "A  tincella"="Algansea tincella",
                                                 "A  tamazulae"="Allodontichthys tamazulae",
                                                 "A  toweri"="Ataeniobius toweri",
                                                 "A  zacapuensis"="Allotoca zacapuensis",
                                                 "A  zonistius"="Allodontichthys zonistius",
                                                 "Astyanax sp"="Astyanax sp",
+                                                "bagre y lobina"="Bagre sp & Micropterus salmoides",
                                                 "C   bartoni"="Cichlasoma bartoni",
+                                                "C   labridens"="Cichlasoma labridens",
                                                 "C  bartoni"="Cichlasoma bartoni",
                                                 "C  audax"="Characodon audax",
                                                 "C  beani"="Cichlasoma beani",
                                                 "C  carpio"="Cyprinus carpio",
+                                                "C  carpio  sin georreferencia "="Cyprinus carpio",
                                                 "C  encaustus"="Chapalichthys encaustus",
                                                 "C  istlanum"="Cichlasoma istlanum",
                                                 "C  labridens"="Cichlasoma labridens",
                                                 "C  lateralis"="Characodon lateralis",
+                                                "C  tessellatus"="Cualac tessellatus",
+                                                "carpa"="Cyprinus carpio",
+                                                "carpas"="Cyprinus carpio",
                                                 "C  meeki"="Cyprinodon meeki",
                                                 "C  pardalis"="Chapalichthys pardalis",
+                                                "confirmamos la presencia de Z  tequila y A  splendens"="Zoogoneticus tequila y Ameca  splendens",
                                                 "D  dichroma"="Dionda dichroma",
                                                 "D  mandibularis"="Dionda mandibularis",
+                                                "encontrada seca"="Dry",
+                                                "es la localidad "="is the locality",
                                                 "G  atripinnis"="Goodea atripinnis",
                                                 "G  cf  senilis"="Gambusia cf senilis",
-                                                "G  cf  senilis  como exotico "="Gambusia cf senilis",
                                                 "G  fluviatilis"="Gobiesox fluviatilis",
                                                 "G  multiradiatus"="Girardinichthys multiradiatus",
                                                 "G  viviparus"="Girardinichthys viviparus",
@@ -488,36 +516,51 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyan
                                                 "H  boucardi"="Hybopsis boucardi",
                                                 "H  burtoni"="Haplochromis burtoni",
                                                 "H  calientis"="Hybopsis calientis",
-                                                #"H  cf  cyanoguttatus"="Herichthys cf cyanoguttatus", # Removed
+                                                "H  cf  cyanoguttatus"="Herichthys cf cyanoguttatus", 
+                                                "H  cyanoguttatus"="Herichthys cyanoguttatus",
                                                 "H  jonesii"="Heterandria jonesii",
                                                 "H  turneri"="Hubbsina turneri",
+                                                "Heterandria sp"="Heterandria sp",
                                                 "Heterandria sp "="Heterandria sp",
                                                 "I  dugesii"="Ictalurus dugesii",
                                                 "I  furcidens"="Ilyodon furcidens",
                                                 "I  mexicanus"="Ictalurus mexicanus",
                                                 "I  whitei"="Ilyodon whitei",
+                                                "juiles "="Rhamdia sp",
                                                 "L  macrochirus"="Lepomis macrochirus",
                                                 "L  macrochirus  1965"="Lepomis macrochirus",
+                                                "M  aculeata"="Menidia aculeata",
                                                 "M  arge"="Menidia arge",
+                                                "M  attenuata"="Menidia attenuata",
                                                 "M  chapalae"="Menidia chapalae",
+                                                "M  charari"="Menidia charari",
                                                 "M  consocia"="Menidia consocia",
+                                                "M  estor"="Menidia estor",
                                                 "M  humboldtiana"="Menidia humboldtiana",
                                                 "M  jordani"="Menidia jordani",
                                                 "M  labarca"="Menidia labarcae",
                                                 "M  mezquital"="Menidia mezquital",
+                                                "M  patzcuaro"="Menidia patzcuaro",
                                                 "M  riojai"="Menidia riojai",
                                                 "M  salmoides"="Micropterus salmoides",
                                                 "Menidia sp "="Menidia sp",
                                                 "N  amecae"="Notropis amecae",
+                                                "nada"="none",
+                                                "nada  localidad no propicia"="none",
                                                 "ninguno"="none",
+                                                "no era la localidad buscada"="it was not the right locality",
+                                                "no hay vida acuatica"="no aquatic life",
                                                 "O  aureus"="Oreochromis aureus",
+                                                "O  aureus  sin georreferencia"="Oreochromis aureus",
                                                 "O  niloticus"="Oreochromis niloticus",
+                                                "observamos Oreochromis"="Oreochromis spp",
                                                 "O  mossambicus"="Oreochromis mossambicus",
                                                 "Oreochromis sp"="Oreochromis sp",
                                                 "Oreochromis sp "="Oreochromis sp",
                                                 "P   sphenops "= "Poecilia sphenops",
                                                 "P  baenschi"="Poeciliopsis baenschi",
                                                 "P  balsas"="Poeciliopsis balsas",
+                                                "P  balsas "="Poeciliopsis balsas",
                                                 "P  butleri"="Poecilia butleri",
                                                 "P  butleri  1968 "="Poecilia butleri",
                                                 "P cf  butleri"="Poecilia cf butleri",
@@ -527,6 +570,7 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyan
                                                 "P  gracilis"="Poeciliopsis gracilis",
                                                 "P  infans"="Poeciliopsis infans",
                                                 "P  mexicana"="Poecilia mexicana",
+                                                "P  mexicana   "="Poecilia mexicana",
                                                 "P  nigromaculatus"="Pomoxis nigromaculatus",
                                                 "P  reticulata"="Poecilia reticulata",
                                                 "P  sphenops"="Poecilia sphenops",
@@ -540,8 +584,13 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyan
                                                 "Poeciliopsis sp "="Poeciliopsis sp",
                                                 "S  austrinus"="Scartomyzon austrinus",
                                                 "S  bilineata"="Skiffia bilineata",
+                                                "S  francesae"="Skiffia francesae",
+                                                "S  francesae "="Skiffia francesae",
                                                 "S  lermae"="Skiffia lermae",
                                                 "S  multipunctatum"="Sicydium multipunctatum",
+                                                "son aguas negras"="foul water",
+                                                "trompos "="?",
+                                                "trucha arcoiris"="Oncorhynchus mykiss",
                                                 "X  captivus"="Xenoophorus captivus",
                                                 "X  eiseni"="Xenotoca eiseni",
                                                 "X  hellerii"="Xiphophorus hellerii",
@@ -553,232 +602,144 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   fasciatus "="Astyan
                                                 "Xiphophorus variatus"="Xiphophorus variatus",
                                                 "Y  alta"="Yuriria alta",
                                                 "Y  chapalae"="Yuriria chapalae",
-                                                "Z  quitzeoensis"="Zoogoneticus quitzeoensis")) # First update (for the species in the 53 sites initially considered for analysis)
+                                                "ya no existe"="ceased to exist",
+                                                "Z  quitzeoensis"="Zoogoneticus quitzeoensis",
+                                                "Z  tequila"="Zoogoneticus tequila")) 
 sort(unique(as.character(tax$Genus_species)))
 
-tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   dugesii"="Allotoca dugesii",
-                                                        "A  meeki"="Allotoca meeki",
-                                                        "A  splendens"="Ameca splendens",
-                                                        "C   labridens"="Cichlasoma labridens",
-                                                        "C  auratus"="Carassius auratus",
-                                                        "C  carpio  sin georreferencia "="Cyprinus carpio",
-                                                        "C  tessellatus"="Cualac tessellatus",
-                                                        "confirmamos la presencia de Z  tequila y A  splendens"="Zoogoneticus tequila, Ameca splendens",
-                                                        "encontrada seca"="none",
-                                                        "es la localidad "="none",
-                                                        "G  affinis"="Gambusia affinis",
-                                                        "G  multiradiatus "="Girardinichthys multiradiatus",
-                                                        "H  cf  cyanoguttatus"="Herichthys cf cyanoguttatus",
-                                                        "H  cyanoguttatus"="Herichthys cyanoguttatus",
-                                                        "M  aculeata"="Menidia aculeata",
-                                                        "M  attenuata"="Menidia attenuata",
-                                                        "M  charari"="Menidia charari",
-                                                        "M  estor"="Menidia estor",
-                                                        "M  patzcuaro"="Menidia patzcuaro",
-                                                        "nada"="none",
-                                                        "nada  localidad no propicia"="none",
-                                                        "no era la localidad buscada"="none",
-                                                        "no hay vida acuatica"="none",
-                                                        "O  aureus  sin georreferencia"="Oreochromis aureus",
-                                                        "observamos Oreochromis"="Oreochromis sp",
-                                                        "P  balsas "="Poeciliopsis balsas",
-                                                        "P  latipunctata"="Poecilia latipunctata",
-                                                        "P  mexicana   "="Poecilia mexicana",
-                                                        "S  francesae"="Skiffia francesae",
-                                                        "S  francesae "="Skiffia francesae",
-                                                        "son aguas negras"="none",
-                                                        "ya no existe"="none",
-                                                        "Z  tequila"="Zoogoneticus tequila")) # Species left when incorporating all 83 sites
+# Populate other table sections:
 
-tax$Update1[tax$Genus_species=="Menidia arge"] <- "Chirostoma arge"
-tax$Source1[tax$Genus_species=="Menidia arge"] <- "FishBase"
+# Synonyms (TRUE or FALSE):
+tax$Synonym <- ifelse(tax$Genus_species %in% c("Archocentrus nigrofasciatus",
+                                               "Cichlasoma bartoni",
+                                               "Cichlasoma beani",
+                                               "Cichlasoma istlanum",
+                                               "Cichlasoma labridens",
+                                               "Dionda dichroma",
+                                               "Dionda mandibularis",
+                                               "Heterandria bimaculata",
+                                               "Hybopsis boucardi",
+                                               "Haplochromis burtoni",
+                                               "Hybopsis calientis",
+                                               "Heterandria jonesii",
+                                               "Heterandria sp",
+                                               "Hubbsina turneri",
+                                               "Menidia aculeata",
+                                               "Menidia arge",
+                                               "Menidia attenuata",
+                                               "Menidia chapalae",
+                                               "Menidia charari",
+                                               "Menidia consocia",
+                                               "Menidia estor",
+                                               "Menidia humboldtiana",
+                                               "Menidia jordani", 
+                                               "Menidia labarcae", 
+                                               "Menidia mezquital",
+                                               "Menidia patzcuaro",
+                                               "Menidia riojai",
+                                               "Menidia sp",
+                                               "Scartomyzon austrinus",
+                                               "Skiffia bilineata"), "TRUE", "FALSE")
+tax$Synonym <- ifelse(tax$Genus_species %in% c("Dry", "is the locality", 
+                                               "none", "it was not the right locality",
+                                               "no aquatic life", "foul water", "?",
+                                               "ceased to exist"), NA, tax$Synonym)
 
-tax$Update1[tax$Genus_species=="Menidia chapalae"] <- "Chirostoma chapalae"
-tax$Source1[tax$Genus_species=="Menidia chapalae"] <- "FishBase"
+# Comments:
+tax$Update[tax$Genus_species=="Astyanax fasciatus"] <- "Astyanax mexicanus"
+tax$Update_comment[tax$Genus_species=="Astyanax fasciatus"] <- "Some taxonomic uncertainty with this record. Currently in the locality it is considered as A. mexicanus"
 
-tax$Update1[tax$Genus_species=="Menidia consocia"] <- "Chirostoma consocium"
-tax$Source1[tax$Genus_species=="Menidia consocia"] <- "FishBase"
-# Miller (2005) is subsps consocium since it is reported in Rio Grande de Santiago.
+tax$Update[tax$Genus_species=="Menidia consocia"] <- "TBD"
+tax$Update_comment[tax$Genus_species=="Menidia consocia"] <- "Could be C chapalae or C reseratum"
+tax$Update[tax$Genus_species=="Menidia patzcuaro"] <- "TBD"
+tax$Update_comment[tax$Genus_species=="Menidia patzcuaro"] <- "Could be C attenuatum or C estor"
+tax$Update[tax$Genus_species=="Scartomyzon austrinus"] <- "TBD"
+tax$Update_comment[tax$Genus_species=="Scartomyzon austrinus"] <- "Could be M austrinum or M milleri"
 
-tax$Update1[tax$Genus_species=="Menidia humboldtiana"] <- "Chirostoma humboldtianum"
-tax$Source1[tax$Genus_species=="Menidia humboldtiana"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia jordani"] <- "Chirostoma jordani"
-tax$Source1[tax$Genus_species=="Menidia jordani"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia labarcae"] <- "Chirostoma labarcae"
-tax$Source1[tax$Genus_species=="Menidia labarcae"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia mezquital"] <- "Chirostoma jordani"
-tax$Source1[tax$Genus_species=="Menidia mezquital"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia riojai"] <- "Chirostoma riojai"
-tax$Source1[tax$Genus_species=="Menidia riojai"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia aculeata"] <- "Chirostoma aculeatum"
-tax$Source1[tax$Genus_species=="Menidia aculeata"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia attenuata"] <- "Chirostoma attenuatum"
-tax$Source1[tax$Genus_species=="Menidia attenuata"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia charari"] <- "Chirostoma charari"
-tax$Source1[tax$Genus_species=="Menidia charari"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia estor"] <- "Chirostoma estor"
-tax$Source1[tax$Genus_species=="Menidia estor"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia patzcuaro"] <- "Chirostoma patzcuaro"
-tax$Source1[tax$Genus_species=="Menidia patzcuaro"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Menidia sp"] <- "Chirostoma sp"
-tax$Source1[tax$Genus_species=="Menidia sp"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Astyanax fasciatus"] <- "Astyanax mexicanus"
-tax$Source1[tax$Genus_species=="Astyanax fasciatus"] <- "Miller (2005)"
-
-tax$Update1[tax$Genus_species=="Haplochromis burtoni"] <- "Astatotilapia burtoni"
-tax$Source1[tax$Genus_species=="Haplochromis burtoni"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Heterandria sp"] <- "Pseudoxiphophorus sp"
-tax$Source1[tax$Genus_species=="Heterandria sp"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Cichlasoma bartoni"] <- "Nosferatu bartoni"
-tax$Source1[tax$Genus_species=="Cichlasoma bartoni"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Cichlasoma labridens"] <- "Nosferatu labridens"
-tax$Source1[tax$Genus_species=="Cichlasoma labridens"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Archocentrus nigrofasciatus"] <- "Amatitlania nigrofasciata"
-tax$Source1[tax$Genus_species=="Archocentrus nigrofasciatus"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Cichlasoma beani"] <- "Mayaheros beani"
-tax$Source1[tax$Genus_species=="Cichlasoma beani"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Dionda dichroma"] <- "Tampichthys dichroma"
-tax$Source1[tax$Genus_species=="Dionda dichroma"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Dionda mandibularis"] <- "Tampichthys mandibularis"
-tax$Source1[tax$Genus_species=="Dionda mandibularis"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Heterandria bimaculata"] <- "Pseudoxiphophorus bimaculatus"    
-tax$Source1[tax$Genus_species=="Heterandria bimaculata"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Heterandria jonesii"] <- "Pseudoxiphophorus jonesii"    
-tax$Source1[tax$Genus_species=="Heterandria jonesii"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Hybopsis boucardi"] <- "Notropis boucardi"
-tax$Source1[tax$Genus_species=="Hybopsis boucardi"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Hybopsis calientis"] <- "Notropis calientis"
-tax$Source1[tax$Genus_species=="Hybopsis calientis"] <- "FishBase"
-
-tax$Update1[tax$Genus_species=="Scartomyzon austrinus"] <- "Moxostoma austrinum"
-tax$Source1[tax$Genus_species=="Scartomyzon austrinus"] <- "FishBase"
-
-```
-<p>&nbsp;</p>
-List of species:
-```{r, echo=FALSE, results=TRUE}
-rownames(tax) <- NULL
-tax %>%
-  kbl() %>%
-  kable_styling()
-```
-<p>&nbsp;</p>
-#### **Phylogeny:**
-
-The species name used to source data depends on the taxonomic lists of each source. Below I test that the phylogeny of all taxa can be sourced from the Fish Tree of Life using some names that are considered invalid synonyms in GBIF.
-
-```{r, echo=TRUE}
-updated <- tax[!is.na(tax$Update1),]
-notupdated <- anti_join(tax, updated)
-fishsps <- as.vector(c(sort(unique(notupdated$Genus_species)), sort(unique(updated$Update1)))) #117
-fishsps <- gsub(" cf ", " ", fishsps)
-fishsps <- fishsps[! fishsps %in% c("Astyanax sp", "Gila sp", "Pseudoxiphophorus sp", "Chirostoma sp",
-                                    "Oreochromis sp",
-                                    "Poecilia sp", "Poeciliopsis sp", "none", "A monticola", "NA")]
-
-fishsps <- c(fishsps, "Algansea monticola", "Agonostomus monticola")
-fishsps <- fishsps[! fishsps %in% "Zoogoneticus tequila, Ameca splendens"] # Already included individually
-
-length(sort(unique(fishsps))) # 105
-
-## Check if the phylogeny can be sourced:
-checkphylo <- fishtree_complete_phylogeny(species=fishsps)
-
-fishsps[fishsps=="Mayaheros beani"] <- "Cichlasoma beani"
-fishsps[fishsps=="Nosferatu bartoni"] <- "Herichthys bartoni"
-fishsps[fishsps=="Nosferatu labridens"] <- "Herichthys labridens"
-fishsps[fishsps=="Tampichthys dichroma"] <- "Tampichthys dichromus"
+# Clear updates:
 
 
-checkphylo <- fishtree_complete_phylogeny(species=fishsps) # No warning issued (all sps found)
-
-tax$Update2[tax$Update1=="Mayaheros beani"] <- "Cichlasoma beani"
-tax$Source2[tax$Update1=="Mayaheros beani"] <- "Fish Tree of Life"
-
-tax$Update2[tax$Update1=="Nosferatu bartoni"] <- "Herichthys bartoni"
-tax$Source2[tax$Update1=="Nosferatu bartoni"] <- "Fish Tree of Life"
-
-tax$Update2[tax$Update1=="Nosferatu labridens"] <- "Herichthys labridens"
-tax$Source2[tax$Update1=="Nosferatu labridens"] <- "Fish Tree of Life"
-
-tax$Update2[tax$Update1=="Tampichthys dichroma"] <- "Tampichthys dichromus"
-tax$Source2[tax$Update1=="Tampichthys dichroma"] <- "Fish Tree of Life"
-
-save(tax, file="tax.RData")
-write.csv2(tax, "tax.csv")
+tax$Update[tax$Genus_species=="Archocentrus nigrofasciatus"] <- "Amatitlania nigrofasciata"
+tax$Update[tax$Genus_species=="Cichlasoma bartoni"] <- "Herichthys bartoni"
+tax$Update[tax$Genus_species=="Cichlasoma beani"] <- "Mayaheros beani"
+tax$Update[tax$Genus_species=="Cichlasoma istlanum"] <- "Amphilophus istlanus"
+tax$Update[tax$Genus_species=="Cichlasoma labridens"] <- "Herichthys labridens"
+tax$Update[tax$Genus_species=="Dionda dichroma"] <- "Tampichthys dichroma"
+tax$Update[tax$Genus_species=="Dionda mandibularis"] <- "Tampichthys mandibularis"
+tax$Update[tax$Genus_species=="Heterandria bimaculata"] <- "Pseudoxiphophorus bimaculatus"
+tax$Update[tax$Genus_species=="Hybopsis boucardi"] <- "Notropis boucardi"
+tax$Update[tax$Genus_species=="Haplochromis burtoni"] <- "Astatotilapia burtoni"
+tax$Update[tax$Genus_species=="Hybopsis calientis"] <- "Notropis calientis"
+tax$Update[tax$Genus_species=="Heterandria jonesii"] <- "Pseudoxiphophorus jonesii"
+tax$Update[tax$Genus_species=="Heterandria sp"] <- "Pseudoxiphophorus sp"
+tax$Update[tax$Genus_species=="Hubbsina turneri"] <- "Girardinichthys turneri"
+tax$Update[tax$Genus_species=="Menidia aculeata"] <- "Chirostoma aculeatum"
+tax$Update[tax$Genus_species=="Menidia arge"] <- "Chirostoma arge"
+tax$Update[tax$Genus_species=="Menidia attenuata"] <- "Chirostoma attenuatum"
+tax$Update[tax$Genus_species=="Menidia chapalae"] <- "Chirostoma chapalae"
+tax$Update[tax$Genus_species=="Menidia charari"] <- "Chirostoma charari"
+tax$Update[tax$Genus_species=="Menidia estor"] <- "Chirostoma estor"
+tax$Update[tax$Genus_species=="Menidia humboldtiana"] <- "Chirostoma humboldtianum"
+tax$Update[tax$Genus_species=="Menidia jordani"] <- "Chirostoma jordani"
+tax$Update[tax$Genus_species=="Menidia labarcae"] <- "Chirostoma labarcae"
+tax$Update[tax$Genus_species=="Menidia mezquital"] <- "Chirostoma mezquital"
+tax$Update[tax$Genus_species=="Menidia riojai"] <- "Chirostoma riojai"
+tax$Update[tax$Genus_species=="Menidia sp"] <- "Chirostoma sp"
+tax$Update[tax$Genus_species=="Skiffia bilineata"] <- "Neotoca bilineata"
 ```
 <p>&nbsp;</p>
 
 #### **Create final data subsets:**
 
-Initially, authors compiled incidence data for a subset of more than 80 sites. However, not all of these sites can be considered for analyses.
+Initially, authors compiled incidence data for a subset of more than 80 sites. 
 
-* Some sites are removed because:
-    * A reliable reconstruction of the historical assemblage was not possible (Gesundheit and Mac?as Garcia, 2018)
-    * It was considered that due to the site & area characteristics, a comprehensive sampling of the assemblage could not be achieved in 2005 (Gesundheit and Mac?as Garcia, 2018)
+I generate different subsets of these site list. The purpose is to use them for different analyses and for sensitivity tests.
+
+*SUBSET 1:*
+In this subset, some sites are removed because:
+    * A reliable reconstruction of the historical assemblage was not possible (Gesundheit and Macias Garcia, 2018)
+    * It was considered that due to the site & area characteristics, a comprehensive sampling of the assemblage could not be achieved in 2005 (Gesundheit and Macias Garcia, 2018)
     * Only some species (not the complete assemblage) were reported in either temporal period of the survey. This last point refers to the LCAIE collections which were focused only on G. multiradiatus.
-    * Didn't exist or were no longer suitable for aquatic life in 2005 (Gesundheit and Mac?as Garcia, 2018).
+    * Didn't exist or were no longer suitable for aquatic life in 2005 (Gesundheit and Macias Garcia, 2018).
     
 These locations to be removed are indicated in the original dataset. Eliminating them yields a final data set of 53 sites for analyses. (NDT53)
 
+*SUBSET 2:*
 Another subset that also includes the sites that are not suitable for aquatic life anymore in 2005 (i.e. point 4) is generated for analyses. (NDT 67)
 
-These two objects will be used for analyses and compared.
+
+*SUBSET 3:*
+-Historical species list (narrow): all species reported in the catalogs for any site are included.
+
+-Historical species list (broad): all species reported in any site are included.
+
+-Contemporary: all species monitored in any site in 2005.
+
+***Only species in sites that were visited in both periods are included.
+
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results=TRUE}
-# List of localities to remove from final dataset (53):
+# Create subsets of data:
+path_lists <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+length(unique(NDT$SiteName)) # 83
+
+# SUBSET 1:
+
 NotIncFinal56 <- NDT[grepl("No incluida en el conjunto final de 56", NDT$Comments),]
 sort(unique(NotIncFinal56$Comments))
-sort(unique(NotIncFinal56$NativeFound2005))
+sort(unique(NotIncFinal56$NativeFound2005)) # 27 locations
 
-# Kept (53):
-NIF56 <- NotIncFinal56[,c(3,4)]
-rownames(NIF56) <- NULL
-NIF56 %>%
-  kbl() %>%
-  kable_styling()
+LCAIE <- NDT[NDT$CatalogNumbers=="LCAIE",]  # 5 locations
 
-LCAIE <- NDT[NDT$CatalogNumbers=="LCAIE",]
-LCAIE <- LCAIE[,c(3,4)]
-rownames(LCAIE) <- NULL
-LCAIE %>%
-  kbl() %>%
-  kable_styling()
-```
-<p>&nbsp;</p>
-
-53 & 67 site subsets:    
-```{r, echo=TRUE, warning=FALSE, message=FALSE, results=FALSE}
 sort(unique(NDT$Comments))
 NDT53 <- NDT[!grepl("No incluida en el conjunto final de 56", NDT$Comments),]
 sort(unique(NDT$CatalogNumbers))
 NDT53 <- NDT53[!NDT53$CatalogNumbers=="LCAIE",]
 
-save(NDT53, file="NDT53.RData")
-write.csv2(NDT53, file="NDT53.csv")
+save(NDT53, file=paste0(path_lists, "/NDT53.RData"))
+write.csv2(NDT53, file=paste0(path_lists, "/NDT53.csv"))
 
+# SUBSET 2:
 Excluded <- anti_join(NDT, NDT53)
 Excluded$NativeFound2005[Excluded$CatalogNumbers=="LCAIE"]
 
@@ -787,29 +748,76 @@ Excluded <- Excluded[!grepl("Es dificil definir cual puede ser el pool de especi
 Excluded <- Excluded[!grepl("La consider? un outlier", Excluded$Comments),] # Remove outlier considered by Pablo
 Excluded <- Excluded[!Excluded$NativeFound2005 %in% c("nada, es la localidad?", "nada, no era la localidad buscada"),] # removed those that might not have been the same locality
 Excluded <- Excluded[!Excluded$NativeFound2005 %in% "confirmamos la presencia de Z. tequila y A. splendens",] # removed because only qualitative data could be collected in 2005
-
 Excluded <- Excluded[!Excluded$SiteName %in% c("rio Marabasco", "laguna El Barril"),] # remove rio Marabasco, laguna el Barril (no data for the native assemblage)
 
 NDT67 <- rbind(NDT53, Excluded)
 
-save(NDT67, file="NDT67.RData")
-write.csv2(NDT67, file="NDT67.csv")
+save(NDT67, file=paste0(path_lists, "/NDT67.RData"))
+write.csv2(NDT67, file=paste0(path_lists, "/NDT67.csv"))
 
-list14 <- anti_join(NDT67, NDT53)
-save(list14, file="list_14.RData")
-write.csv2(list14, file="list14.csv")
+list53_67 <- anti_join(NDT67, NDT53)
+save(list53_67, file=paste0(path_lists, "/list53_67.RData"))
+write.csv2(list53_67, file=paste0(path_lists, "/list53_67.csv"))
+
+# SUBSET 3:
+ExcludedII <- anti_join(NDT, NDT67)
+ExcludedII <- ExcludedII[!ExcludedII$NativeFound2005 %in% c("nada, es la localidad?", "nada, no era la localidad buscada"),] # removed those that might not have been the same locality
+ExcludedII <- ExcludedII[!ExcludedII$SiteName %in% c("rio Marabasco", "laguna El Barril"),] # remove rio Marabasco, laguna el Barril (no data for the native assemblage)
+
+NDT79 <- rbind(NDT67, ExcludedII)
+
+save(NDT79, file=paste0(path_lists, "/NDT79.RData"))
+write.csv2(NDT79, file=paste0(path_lists, "/NDT79.csv"))
+
+list67_79 <- anti_join(NDT79, NDT67)
+save(list67_79, file=paste0(path_lists, "/list67_79.RData"))
+write.csv2(list67_79, file=paste0(path_lists, "/list67_79.csv"))
+
 ```
 <p>&nbsp;</p>
+#### **Phylogeny:**
 
-#### **Retrieve information of unidentified records:**
+The species name used to source data depends on the taxonomic lists of each source. Below I test that the phylogeny of all taxa can be sourced from the Fish Tree of Life using some names that are considered invalid synonyms in GBIF.
 
-```{r}
-# Historical Native:
-NDT67[NDT67$HistoricalNatBroad %like% " sp", ]
-NDT67[NDT67$HistoricalExotics %like% " sp", ] # none
+```{r, echo=TRUE}
+#updated <- tax[!is.na(tax$Update1),]
+#notupdated <- anti_join(tax, updated)
+#fishsps <- as.vector(c(sort(unique(notupdated$Genus_species)), sort(unique(updated$Update1)))) #117
+#fishsps <- gsub(" cf ", " ", fishsps)
+#fishsps <- fishsps[! fishsps %in% c("Astyanax sp", "Gila sp", "Pseudoxiphophorus sp", #"Chirostoma sp",
+#                                    "Oreochromis sp",
+#                                    "Poecilia sp", "Poeciliopsis sp", "none", "A monticola", #"NA")]
 
-NDT67[NDT67$NativeFound2005 %like% " sp", ]
-NDT67[NDT67$ExoticsFound2005 %like% " sp", ]
+#fishsps <- c(fishsps, "Algansea monticola", "Agonostomus monticola")
+#fishsps <- fishsps[! fishsps %in% "Zoogoneticus tequila, Ameca splendens"] # Already included individually
+
+#length(sort(unique(fishsps))) # 105
+
+## Check if the phylogeny can be sourced:
+#checkphylo <- fishtree_complete_phylogeny(species=fishsps)
+
+#fishsps[fishsps=="Mayaheros beani"] <- "Cichlasoma beani"
+#fishsps[fishsps=="Nosferatu bartoni"] <- "Herichthys bartoni"
+#fishsps[fishsps=="Nosferatu labridens"] <- "Herichthys labridens"
+#fishsps[fishsps=="Tampichthys dichroma"] <- "Tampichthys dichromus"
+
+
+#checkphylo <- fishtree_complete_phylogeny(species=fishsps) # No warning issued (all sps found)
+
+#tax$Update2[tax$Update1=="Mayaheros beani"] <- "Cichlasoma beani"
+#tax$Source2[tax$Update1=="Mayaheros beani"] <- "Fish Tree of Life"
+
+#tax$Update2[tax$Update1=="Nosferatu bartoni"] <- "Herichthys bartoni"
+#tax$Source2[tax$Update1=="Nosferatu bartoni"] <- "Fish Tree of Life"
+
+#tax$Update2[tax$Update1=="Nosferatu labridens"] <- "Herichthys labridens"
+#tax$Source2[tax$Update1=="Nosferatu labridens"] <- "Fish Tree of Life"
+
+#tax$Update2[tax$Update1=="Tampichthys dichroma"] <- "Tampichthys dichromus"
+#tax$Source2[tax$Update1=="Tampichthys dichroma"] <- "Fish Tree of Life"
+
+#save(tax, file="tax.RData")
+#write.csv2(tax, "tax.csv")
 ```
 
 ##### **End of curation script**
