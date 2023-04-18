@@ -57,8 +57,9 @@ library(data.table)
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 rm(list=ls())
 original_data_path <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original"
-locs <- read.csv2(file=paste0(original_data_path, "/locs_georeferidas.csv"), h=T) # Coordinates 
-dtUP <- read_excel("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original/TODO_peces agosto 2010_PGM_Comments.xlsx") # Data file 
+
+locs <- read.csv2(file=paste0(original_data_path, "/locs_georeferidas.csv"), h=T) # Coordinates
+dtUP <- read_excel("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original/TODO_peces agosto 2010_PGM_Comments.xlsx") 
 ```
 <p>&nbsp;</p>
 #### **Data formatting:**
@@ -442,7 +443,7 @@ https://www.calacademy.org/scientists/projects/eschmeyers-catalog-of-fishes
 count_unique <- as.vector(sort(unique(unlist(lapply(NDT[,c(12,14,17,20,25,28)], function (x) strsplit(x,",")))))) # 205
 
 tax <- data.frame(matrix(ncol=7, nrow = 205))
-names(tax) <- c("Short", "Short2", "Genus_species", "Synonym", "Update", "Update_comment", "Genus_species (ECF)")
+names(tax) <- c("Short", "Short2", "Genus_species", "Synonym", "Update", "Update_comment", "Genus_species_ECF")
 tax$Short <- as.vector(sort(unique(unlist(lapply(NDT[,c(12,14,17,20,25,28)],function (x) strsplit(x,","))))))
 tax$Short2 <- tax$Short
 tax$Short2 <- gsub("[[:punct:]]", " ", tax$Short2)               # Remove special characters
@@ -488,6 +489,7 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   dugesii"="Allotoca 
                                                 "C   labridens"="Cichlasoma labridens",
                                                 "C  bartoni"="Cichlasoma bartoni",
                                                 "C  audax"="Characodon audax",
+                                                "C  auratus"="Carassius auratus",
                                                 "C  beani"="Cichlasoma beani",
                                                 "C  carpio"="Cyprinus carpio",
                                                 "C  carpio  sin georreferencia "="Cyprinus carpio",
@@ -505,9 +507,11 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   dugesii"="Allotoca 
                                                 "D  mandibularis"="Dionda mandibularis",
                                                 "encontrada seca"="Dry",
                                                 "es la localidad "="is the locality",
+                                                "G  affinis"="Gambusia affinis",
                                                 "G  atripinnis"="Goodea atripinnis",
                                                 "G  cf  senilis"="Gambusia cf senilis",
                                                 "G  fluviatilis"="Gobiesox fluviatilis",
+                                                "G  multiradiatus "="Girardinichthys multiradiatus",
                                                 "G  multiradiatus"="Girardinichthys multiradiatus",
                                                 "G  viviparus"="Girardinichthys viviparus",
                                                 "G  yucatana"="Gambusia yucatana",
@@ -553,7 +557,7 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   dugesii"="Allotoca 
                                                 "O  aureus"="Oreochromis aureus",
                                                 "O  aureus  sin georreferencia"="Oreochromis aureus",
                                                 "O  niloticus"="Oreochromis niloticus",
-                                                "observamos Oreochromis"="Oreochromis spp",
+                                                "observamos Oreochromis"="Oreochromis sp",
                                                 "O  mossambicus"="Oreochromis mossambicus",
                                                 "Oreochromis sp"="Oreochromis sp",
                                                 "Oreochromis sp "="Oreochromis sp",
@@ -582,6 +586,7 @@ tax$Genus_species <- plyr::revalue(tax$Genus_species, c("A   dugesii"="Allotoca 
                                                 "Poecilia cf  sphenops"="Poecilia cf sphenops",
                                                 "Poecilia sp "="Poecilia sp",
                                                 "Poeciliopsis sp "="Poeciliopsis sp",
+                                                "P  latipunctata"="Poecilia latipunctata",
                                                 "S  austrinus"="Scartomyzon austrinus",
                                                 "S  bilineata"="Skiffia bilineata",
                                                 "S  francesae"="Skiffia francesae",
@@ -649,15 +654,14 @@ tax$Synonym <- ifelse(tax$Genus_species %in% c("Dry", "is the locality",
 tax$Update[tax$Genus_species=="Astyanax fasciatus"] <- "Astyanax mexicanus"
 tax$Update_comment[tax$Genus_species=="Astyanax fasciatus"] <- "Some taxonomic uncertainty with this record. Currently in the locality it is considered as A. mexicanus"
 
-tax$Update[tax$Genus_species=="Menidia consocia"] <- "TBD"
+tax$Update[tax$Genus_species=="Menidia consocia"] <- "TBD1"
 tax$Update_comment[tax$Genus_species=="Menidia consocia"] <- "Could be C chapalae or C reseratum"
-tax$Update[tax$Genus_species=="Menidia patzcuaro"] <- "TBD"
+tax$Update[tax$Genus_species=="Menidia patzcuaro"] <- "TBD2"
 tax$Update_comment[tax$Genus_species=="Menidia patzcuaro"] <- "Could be C attenuatum or C estor"
-tax$Update[tax$Genus_species=="Scartomyzon austrinus"] <- "TBD"
+tax$Update[tax$Genus_species=="Scartomyzon austrinus"] <- "TBD3"
 tax$Update_comment[tax$Genus_species=="Scartomyzon austrinus"] <- "Could be M austrinum or M milleri"
 
 # Clear updates:
-
 
 tax$Update[tax$Genus_species=="Archocentrus nigrofasciatus"] <- "Amatitlania nigrofasciata"
 tax$Update[tax$Genus_species=="Cichlasoma bartoni"] <- "Herichthys bartoni"
@@ -686,6 +690,18 @@ tax$Update[tax$Genus_species=="Menidia mezquital"] <- "Chirostoma mezquital"
 tax$Update[tax$Genus_species=="Menidia riojai"] <- "Chirostoma riojai"
 tax$Update[tax$Genus_species=="Menidia sp"] <- "Chirostoma sp"
 tax$Update[tax$Genus_species=="Skiffia bilineata"] <- "Neotoca bilineata"
+
+sum(is.na(tax$Synonym))
+tax$Short2[is.na(tax$Synonym)] # non species
+
+tax$Genus_species_ECF <- ifelse(is.na(tax$Update), tax$Genus_species, tax$Update)
+tax$Genus_species_ECF <- ifelse(is.na(tax$Genus_species), tax$Short, tax$Genus_species_ECF)
+
+
+path_lists <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+
+save(tax, file=paste0(path_lists, "/tax.RData"))
+write.csv2(tax, file=paste0(path_lists, "/tax.csv"))
 ```
 <p>&nbsp;</p>
 
@@ -715,7 +731,6 @@ Another subset that also includes the sites that are not suitable for aquatic li
 
 -Contemporary: all species monitored in any site in 2005.
 
-***Only species in sites that were visited in both periods are included.
 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results=TRUE}
@@ -760,64 +775,15 @@ save(list53_67, file=paste0(path_lists, "/list53_67.RData"))
 write.csv2(list53_67, file=paste0(path_lists, "/list53_67.csv"))
 
 # SUBSET 3:
-ExcludedII <- anti_join(NDT, NDT67)
-ExcludedII <- ExcludedII[!ExcludedII$NativeFound2005 %in% c("nada, es la localidad?", "nada, no era la localidad buscada"),] # removed those that might not have been the same locality
-ExcludedII <- ExcludedII[!ExcludedII$SiteName %in% c("rio Marabasco", "laguna El Barril"),] # remove rio Marabasco, laguna el Barril (no data for the native assemblage)
+NDT83 <- NDT
+save(NDT83, file=paste0(path_lists, "/NDT83.RData"))
+write.csv2(NDT83, file=paste0(path_lists, "/NDT83.csv"))
 
-NDT79 <- rbind(NDT67, ExcludedII)
-
-save(NDT79, file=paste0(path_lists, "/NDT79.RData"))
-write.csv2(NDT79, file=paste0(path_lists, "/NDT79.csv"))
-
-list67_79 <- anti_join(NDT79, NDT67)
-save(list67_79, file=paste0(path_lists, "/list67_79.RData"))
-write.csv2(list67_79, file=paste0(path_lists, "/list67_79.csv"))
+list67_83 <- anti_join(NDT83, NDT67)
+save(list67_83, file=paste0(path_lists, "/list67_83.RData"))
+write.csv2(list67_83, file=paste0(path_lists, "/list67_83.csv"))
 
 ```
 <p>&nbsp;</p>
-#### **Phylogeny:**
-
-The species name used to source data depends on the taxonomic lists of each source. Below I test that the phylogeny of all taxa can be sourced from the Fish Tree of Life using some names that are considered invalid synonyms in GBIF.
-
-```{r, echo=TRUE}
-#updated <- tax[!is.na(tax$Update1),]
-#notupdated <- anti_join(tax, updated)
-#fishsps <- as.vector(c(sort(unique(notupdated$Genus_species)), sort(unique(updated$Update1)))) #117
-#fishsps <- gsub(" cf ", " ", fishsps)
-#fishsps <- fishsps[! fishsps %in% c("Astyanax sp", "Gila sp", "Pseudoxiphophorus sp", #"Chirostoma sp",
-#                                    "Oreochromis sp",
-#                                    "Poecilia sp", "Poeciliopsis sp", "none", "A monticola", #"NA")]
-
-#fishsps <- c(fishsps, "Algansea monticola", "Agonostomus monticola")
-#fishsps <- fishsps[! fishsps %in% "Zoogoneticus tequila, Ameca splendens"] # Already included individually
-
-#length(sort(unique(fishsps))) # 105
-
-## Check if the phylogeny can be sourced:
-#checkphylo <- fishtree_complete_phylogeny(species=fishsps)
-
-#fishsps[fishsps=="Mayaheros beani"] <- "Cichlasoma beani"
-#fishsps[fishsps=="Nosferatu bartoni"] <- "Herichthys bartoni"
-#fishsps[fishsps=="Nosferatu labridens"] <- "Herichthys labridens"
-#fishsps[fishsps=="Tampichthys dichroma"] <- "Tampichthys dichromus"
-
-
-#checkphylo <- fishtree_complete_phylogeny(species=fishsps) # No warning issued (all sps found)
-
-#tax$Update2[tax$Update1=="Mayaheros beani"] <- "Cichlasoma beani"
-#tax$Source2[tax$Update1=="Mayaheros beani"] <- "Fish Tree of Life"
-
-#tax$Update2[tax$Update1=="Nosferatu bartoni"] <- "Herichthys bartoni"
-#tax$Source2[tax$Update1=="Nosferatu bartoni"] <- "Fish Tree of Life"
-
-#tax$Update2[tax$Update1=="Nosferatu labridens"] <- "Herichthys labridens"
-#tax$Source2[tax$Update1=="Nosferatu labridens"] <- "Fish Tree of Life"
-
-#tax$Update2[tax$Update1=="Tampichthys dichroma"] <- "Tampichthys dichromus"
-#tax$Source2[tax$Update1=="Tampichthys dichroma"] <- "Fish Tree of Life"
-
-#save(tax, file="tax.RData")
-#write.csv2(tax, "tax.csv")
-```
 
 ##### **End of curation script**
