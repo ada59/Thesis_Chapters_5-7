@@ -98,6 +98,9 @@ dflist83 <- lapply(dflist83, function(x) {x <- spread(x, key="Species", value="A
 
 # For all three runnings of the function "create_long_df", warnings are fine and fixed within the same code
 
+lapply(dflist83, function(x) {colSums(x[,-c(1:2)])==0}) #ALWAYS FALSE
+
+
 ###########################################################################################
 # 2) Correct occurrences of A monticola and remove cols that indicate presence of no fish:-
 
@@ -204,7 +207,7 @@ sites$Comment <- ifelse(sites$Site %in% c("rio Marabasco", "rio Coscomate", "lag
                                           "rio Cuarenta", "Los Vergeles", "presa sobre el rio Carrizal"), "NOT IN SM PAPER 2018. Assemblage data for the two periods is not comparable", sites$Comment)
 
 sum(sites$Comment=="NOT IN SM PAPER 2018. Assemblage data for the two periods is not comparable", na.rm=T) # 7, OK
-write.csv2(sites, file=paste0(path_list_SM, "/sites.csv"))
+write.csv2(sites, file=paste0(path_list_SM, "/sites.csv"), row.names=F)
 
 
 # Anecdotics:------------------------------------------------------------------------------
@@ -216,14 +219,29 @@ anec
 anectax <- c("Sicydium multipunctatum", "Oncorhynchus mykiss", 
              "Rhamdia sp", "Cyprinus carpio", "trompos", "peces limpiadores",
              "Bagre sp", "Micropterus salmoides")
+status <- c("N", "?", 
+             "?", "E", "?", "?",
+             "?", "E")
+anectax <- data.frame("Species"=anectax, "Status"=status)
 
-write.csv2(anectax, file=paste0(path_list_SM, "/anectax.csv"))
+write.csv2(anectax, file=paste0(path_list_SM, "/anectax.csv"), row.names=F)
 
 # Species:
+vec_taxa76 <- lapply(dflist83, function(x) {x<- x[!x$SiteNameE %in% c("rio Marabasco", "rio Coscomate", "laguna El Barril", "rio en 6 de Enero",
+                                                                      "rio Cuarenta", "Los Vergeles", "presa sobre el rio Carrizal"),]})
+vec_taxa76 <- lapply(vec_taxa76, function(x) {x<- x[,-c(1:2)]})
+
+vec_taxa76 <- lapply(vec_taxa76, function(x) {x[!colSums(x)==0,]})
+vec_taxa76 <- sort(unique(c(names(vec_taxa76[[1]]), names(vec_taxa76[[2]]),
+                          names(vec_taxa76[[3]]), names(vec_taxa76[[4]]),
+                          names(vec_taxa76[[5]]))))
+
 vec_taxa <- sort(unique(c(names(dflist83[[1]]), names(dflist83[[2]]),
                           names(dflist83[[3]]), names(dflist83[[4]]),
                           names(dflist83[[5]]))))
 vec_taxa <- vec_taxa[!vec_taxa %in% c("SiteNameE", "DrainageBasinE")]
+
+setdiff(vec_taxa, vec_taxa76) # 0, OK
 
 taxa <- data.frame(matrix(ncol=5, nrow=113))
 names(taxa) <- c("Genus_species", "Previous", "Updated", "Regional_Status", "Comment")
@@ -250,7 +268,34 @@ introduced <- c("Oreochromis aureus", "Oreochromis mossambicus", "Oreochromis ni
 
 taxa$Regional_Status <- ifelse(taxa$Genus_species %in% introduced, "Introduced", "Native") # OK
 
+# Extirpated:
+ext <- setdiff(names(dflist83[[2]]), names(dflist83[[4]]))
+
+taxa$Regional_Status <- ifelse(taxa$Genus_species %in% ext, "Extirpated", taxa$Regional_Status) # OK
+
+sum(taxa$Regional_Status=="Introduced")
+sum(taxa$Regional_Status=="Native")
+sum(taxa$Regional_Status=="Extirpated")
+
+
 # Comments:
+
+taxa$Comment <- ifelse(taxa$Genus_species %in% c("TBD1", "TBD2", "TBD3"), "Check Catalog to decide between 2 options", taxa$Comment)
+
+taxa$Comment <- ifelse(taxa$Genus_species %in% c("Mayaheros beani", "Tampichthys mandibularis"), 
+                       "Said to be found in 2005 in paper 2018", taxa$Comment)
+taxa$Comment <- ifelse(taxa$Genus_species %in% c("Amphilophus istlanus", "Notropis calientis", 
+                                                 "Cualac tessellatus", "Allotoca meeki"), 
+                       "Said to NOT be found in 2005 in paper 2018", taxa$Comment)
+taxa$Regional_Status <- ifelse(taxa$Genus_species %in% c("Chirostoma chapalae"), "Native", taxa$Regional_Status)
+taxa$Comment <- ifelse(taxa$Genus_species %in% c("Chirostoma chapalae"), 
+                       "extirpated in native locs, but translocated in P. Cointzio", taxa$Comment)
+
+write.csv2(taxa, file=paste0(path_list_SM, "/taxa.csv"), row.names=F)
+
+additionalSM <- c("Menidia grandocule", "Menidia lucius", "Algansea avia", "Algansea lacustris")
+# Added comment in word.
+
 
 
 # TO FINISH!
