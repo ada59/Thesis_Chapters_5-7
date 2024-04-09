@@ -13,7 +13,7 @@ body {
 text-align: justify}
 </style>
 
-###**Dataset description:**
+### **Dataset description:**
 
 This dataset represents the biodiversity of freshwater fish assemblages along the Trans‐Mexican Volcanic Belt, in Central Mexico. This region is the main area of distribution of the Goodeidae, a freshwater fish family endemic of Mexico.
 <p>&nbsp;</p>
@@ -34,6 +34,7 @@ Efforts were made to achieve the most comprehensive depiction possible of the in
     * Possible underrepresentation of a few species that are known to be better sampled with electrofishing, a method that could not be used in these locations. These species are Agonostomus monticola, Sicydium multipunctatum, Ictalurus dugesii, and Ictalurus mexicanus.
     * Possible influence of the sampling season on the probability to find certain fish species.
 <p>&nbsp;</p>
+
 #### **Libraries:**
 
 ```{r, echo = TRUE, warning=FALSE, message=FALSE}
@@ -56,10 +57,10 @@ library(data.table)
 #### **Read data: **
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 rm(list=ls())
-original_data_path <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original"
+original_data_path <- "C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original"
 
 locs <- read.csv2(file=paste0(original_data_path, "/locs_georeferidas.csv"), h=T) # Coordinates
-dtUP <- read_excel("C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original/TODO_peces agosto 2010_PGM_Comments.xlsx") 
+dtUP <- read_excel("C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/Original/TODO_peces agosto 2010_PGM_Comments.xlsx") 
 ```
 <p>&nbsp;</p>
 #### **Data formatting:**
@@ -80,11 +81,11 @@ head(dtUP, 2L)
 # Modify some names with special characters:
 names(dtUP) <- sapply(names(dtUP), function(x) stri_trans_general(x, id = "Latin-ASCII")) 
 
-names(dtUP)[names(dtUP)=="Cuenta...9"] <- "CountHistNatCatalog"        # Native sps count Historical Catalog Records
-names(dtUP)[names(dtUP)=="Cuenta...11"] <- "CountHistNatBroad"         # Native sps count Historical Broad Sense (Reconstruction)
-names(dtUP)[names(dtUP)=="ampliado - catalogo"] <- "AddedHistNat(B-C)" # Difference sps count Broad Sense - Catalog 
-names(dtUP)[names(dtUP)=="Cuenta...17"] <- "CountNat2005"              # Native sps count 2005
-names(dtUP)[names(dtUP)=="Cuenta...22"] <- "CountNonNat2005"           # Non-native sps count 2005
+names(dtUP)[names(dtUP)=="Cuenta...9"] <- "CountHistNatCatalog"                  # Native sps count Historical Catalog Records
+names(dtUP)[names(dtUP)=="Cuenta...11"] <- "CountHistNatBroad"                   # Native sps count Historical Broad Sense (Reconstruction)
+names(dtUP)[names(dtUP)=="ampliado - catalogo"] <- "AddedHistNat(B-C)"           # Difference sps count Broad Sense - Catalog 
+names(dtUP)[names(dtUP)=="Cuenta...17"] <- "CountNat2005"                        # Native sps count 2005
+names(dtUP)[names(dtUP)=="Cuenta...22"] <- "CountNonNat2005"                     # Non-native sps count 2005
 names(dtUP) <- gsub(" ", "", names(dtUP), fixed = TRUE)
 dtUP <- as.data.frame(dtUP)
 class(dtUP)
@@ -162,7 +163,7 @@ NDT[,8] <- locs$Longitud[locs$Localidad %in% NDT$X6]                            
 
 rownames(NDT) <- 1:nrow(NDT)
 
-identical(dtUP$Localidad, NDT$X4) #TRUE, same order
+identical(dtUP$Localidad, NDT$X4)                                                # TRUE, same order
 NDT <- data.frame(NDT, dtUP[,5:26])
 names(NDT) <- c("Trip", "Month", "Year", "SiteName", "DrainageBasin", "SiteNameII", "Latitude", "Longitude", names(dtUP[,5:26]))
 
@@ -189,13 +190,13 @@ Create a column that contains information on the type of water body (using SM of
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results=FALSE}
 NDT$SiteType <- rep(NA, nrow(NDT))
-NDT$SiteName <- stri_trans_general(NDT$SiteName, id = "Latin-ASCII") # Remove accents
+NDT$SiteName <- stri_trans_general(NDT$SiteName, id = "Latin-ASCII")             # Remove accents
 
 # Streams:
 NDT$SiteType <- ifelse(NDT$DrainageBasin %in% c("El Salado", "rio Cuitzmala", 
                                                 "rio Purificacion",
                                                 "rio Cihuatlan", 
-                                                "lagunas de Sayula"), "Stream", NDT$SiteType) # All sites in these basins are streams
+                                                "lagunas de Sayula"),"Stream", NDT$SiteType)  # All sites in these basins are streams
 NDT$SiteType <- ifelse(NDT$SiteName %in% c("rio El Mimbre", "rio Tunal", "rio Sta Maria",
                                            "rio Barranquitas", "rio Yautepec",
                                            "trib. rio Tamazula", "trib. rio Tuxpan",
@@ -429,9 +430,9 @@ sort(unique(NDT$SiteNameE))
 
 
 ```{r, echo=TRUE}
-path_lists <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+path_lists <- "C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
 save(NDT, file=paste0(path_lists, "/NDT.RData"))
-write.csv2(NDT, file=paste0(path_lists, "/NDT.csv"))
+write.csv(NDT, file=paste0(path_lists, "/NDT.csv"))
 ```
 <p>&nbsp;</p>
 #### **Taxonomic updates**
@@ -698,10 +699,10 @@ tax$Genus_species_ECF <- ifelse(is.na(tax$Update), tax$Genus_species, tax$Update
 tax$Genus_species_ECF <- ifelse(is.na(tax$Genus_species), tax$Short, tax$Genus_species_ECF)
 
 
-path_lists <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+path_lists <- "C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
 
 save(tax, file=paste0(path_lists, "/tax.RData"))
-write.csv2(tax, file=paste0(path_lists, "/tax.csv"))
+write.csv(tax, file=paste0(path_lists, "/tax.csv"))
 ```
 <p>&nbsp;</p>
 
@@ -725,7 +726,7 @@ Another subset that also includes the sites that are not suitable for aquatic li
 
 
 *SUBSET 3:*
--Historical species list (narrow): all species reported in the catalogs for any site are included.
+-Historical species list (narrow / conservative): all species reported in the catalogs for any site are included.
 
 -Historical species list (broad): all species reported in any site are included.
 
@@ -735,11 +736,10 @@ Another subset that also includes the sites that are not suitable for aquatic li
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE, results=TRUE}
 # Create subsets of data:
-path_lists <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+path_lists <- "C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
 length(unique(NDT$SiteName)) # 83
 
 # SUBSET 1:
-
 NotIncFinal56 <- NDT[grepl("No incluida en el conjunto final de 56", NDT$Comments),]
 sort(unique(NotIncFinal56$Comments))
 sort(unique(NotIncFinal56$NativeFound2005)) # 27 locations
@@ -752,7 +752,8 @@ sort(unique(NDT$CatalogNumbers))
 NDT53 <- NDT53[!NDT53$CatalogNumbers=="LCAIE",]
 
 save(NDT53, file=paste0(path_lists, "/NDT53.RData"))
-write.csv2(NDT53, file=paste0(path_lists, "/NDT53.csv"))
+write.csv(NDT53, file=paste0(path_lists, "/NDT53.csv"))
+
 
 # SUBSET 2:
 Excluded <- anti_join(NDT, NDT53)
@@ -768,20 +769,21 @@ Excluded <- Excluded[!Excluded$SiteName %in% c("rio Marabasco", "laguna El Barri
 NDT67 <- rbind(NDT53, Excluded)
 
 save(NDT67, file=paste0(path_lists, "/NDT67.RData"))
-write.csv2(NDT67, file=paste0(path_lists, "/NDT67.csv"))
+write.csv(NDT67, file=paste0(path_lists, "/NDT67.csv"))
 
 list53_67 <- anti_join(NDT67, NDT53)
 save(list53_67, file=paste0(path_lists, "/list53_67.RData"))
-write.csv2(list53_67, file=paste0(path_lists, "/list53_67.csv"))
+write.csv(list53_67, file=paste0(path_lists, "/list53_67.csv"))
+
 
 # SUBSET 3:
 NDT83 <- NDT
 save(NDT83, file=paste0(path_lists, "/NDT83.RData"))
-write.csv2(NDT83, file=paste0(path_lists, "/NDT83.csv"))
+write.csv(NDT83, file=paste0(path_lists, "/NDT83.csv"))
 
 list67_83 <- anti_join(NDT83, NDT67)
 save(list67_83, file=paste0(path_lists, "/list67_83.RData"))
-write.csv2(list67_83, file=paste0(path_lists, "/list67_83.csv"))
+write.csv(list67_83, file=paste0(path_lists, "/list67_83.csv"))
 
 ```
 <p>&nbsp;</p>
