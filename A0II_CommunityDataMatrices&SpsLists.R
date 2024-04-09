@@ -1,10 +1,10 @@
-###########################################################################################
-# Script: Create community matrices
+################################################################################
+# Script: Create SM Lists
 # AFE
 # April 2023
-###########################################################################################
+################################################################################
 
-# Libraries:-------------------------------------------------------------------------------
+# Libraries:--------------------------------------------------------------------
 library(dplyr)
 library(tidyverse)
 library(readxl)
@@ -14,8 +14,8 @@ library(data.table)
 rm(list=ls())
 myd <- getwd()
 
-# Read data:-------------------------------------------------------------------------------
-lists_path <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
+# Read data:--------------------------------------------------------------------
+lists_path <- "C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists"
 
 load(paste0(lists_path, "/NDT53.RData")) # Raw data (53)
 load(paste0(lists_path, "/NDT67.RData")) # Raw data (67)
@@ -23,8 +23,9 @@ load(paste0(lists_path, "/NDT83.RData")) # Raw data (83)
 load(paste0(lists_path, "/tax.RData"))   # List of species names & taxonomic updates
 
 
-###########################################################################################
-# 1) First formatting of data:-------------------------------------------------------------
+
+################################################################################
+# 1) First formatting of data:==================================================
 
 str(NDT53)
 str(NDT67)
@@ -96,28 +97,26 @@ dflist83  <- lapply(dflist83, function(x) {x$Species <- tax$Genus_species_ECF[ma
 dflist83 <- lapply(dflist83, function(x) {x <- x %>% distinct()})
 dflist83 <- lapply(dflist83, function(x) {x <- spread(x, key="Species", value="Abundance", fill=0)})
 
-# For all three runnings of the function "create_long_df", warnings are fine and fixed within the same code
+# NOTE: For all three runnings of the function "create_long_df", warnings are fine and fixed within the same code
 
-lapply(dflist83, function(x) {colSums(x[,-c(1:2)])==0}) #ALWAYS FALSE
-
-
-###########################################################################################
-# 2) Correct occurrences of A monticola and remove cols that indicate presence of no fish:-
-
-# ALL SUBSETS (Historical period):
-
-l_historical <- list(dflist53[[1]], dflist53[[2]], 
-                 dflist67[[1]], dflist67[[2]], 
-                 dflist83[[1]], dflist83[[2]])
+lapply(dflist83, function(x) {colSums(x[,-c(1:2)])==0}) # ALWAYS FALSE
 
 
-l_contemporary <- list(dflist53[[4]], dflist53[[5]], 
-                     dflist67[[4]], dflist67[[5]], 
-                     dflist83[[4]], dflist83[[5]])
 
-
+################################################################################
+# 2) Correct occurrences of A monticola and remove cols that indicate presence of no fish:
 # A monticola is Algansea monticola in "El Huizcolote River" & "El Sacristan Spring"
 # A monticola is Agonostomus monticola in "De Comala River", "Salado River"
+
+
+l_historical <- list(dflist53[[1]],dflist53[[2]],
+                 dflist67[[1]],dflist67[[2]],
+                 dflist83[[1]],dflist83[[2]])
+
+l_contemporary <- list(dflist53[[4]], 
+                     dflist67[[4]],
+                     dflist83[[4]])
+
 
 
 for (i in 1:length(l_historical)) {
@@ -126,19 +125,19 @@ for (i in 1:length(l_historical)) {
   dt$`Dajaus monticola` <- rep(0, nrow(dt))
   dt$`Algansea monticola` <- rep(0, nrow(dt))
   
-  dt$`Algansea monticola` <- ifelse(dt$SiteName %in% c("El Huizcolote River", "El Sacristan Spring"), 1, 0)
-  dt$`Dajaus monticola` <- ifelse(dt$SiteName %in% c("De Comala River", "Salado River"), 1, 0)
+  dt$`Algansea monticola` <- ifelse(dt$SiteNameE %in% c("El Huizcolote River", "El Sacristan Spring"), 1, 0)
+  dt$`Dajaus monticola` <- ifelse(dt$SiteNameE %in% c("De Comala River", "Salado River"), 1, 0) # The occurrence in el Salado should appear in [[1]] so here this is corrected
   dt <- dt[,!names(dt)=="A monticola"]
   l_historical[[i]] <- dt
 }
+
 for (i in 1:length(l_contemporary)) {
   dt <- l_contemporary[[i]]
   
   dt$`Dajaus monticola` <- rep(0, nrow(dt))
-  dt$`Algansea monticola` <- rep(0, nrow(dt))
+  #dt$`Algansea monticola` <- rep(0, nrow(dt)) # not found anymore
   
-  dt$`Algansea monticola` <- ifelse(dt$SiteName %in% c("El Huizcolote River", "El Sacristan Spring"), 1, 0)
-  dt$`Dajaus monticola` <- ifelse(dt$SiteName %in% c("De Comala River", "Salado River"), 1, 0)
+  dt$`Dajaus monticola` <- ifelse(dt$SiteNameE %in% c("De Comala River", "Salado River"), 1, 0) # continues to occur
   dt <- dt[,!names(dt)=="A monticola"]
   l_contemporary[[i]] <- dt
 }
@@ -151,11 +150,9 @@ dflist83[[1]] <- l_historical[[5]]
 dflist83[[2]] <- l_historical[[6]]
 
 dflist53[[4]] <- l_contemporary[[1]]
-dflist53[[5]] <- l_contemporary[[2]]
-dflist67[[4]] <- l_contemporary[[3]]
-dflist67[[5]] <- l_contemporary[[4]]
-dflist83[[4]] <- l_contemporary[[5]]
-dflist83[[5]] <- l_contemporary[[6]]
+dflist67[[4]] <- l_contemporary[[2]]
+dflist83[[4]] <- l_contemporary[[3]]
+
 
 
 lapply(dflist53, function(x) {unique(names(x))})
@@ -190,27 +187,31 @@ lapply(dflist67, function(x) {unique(names(x))})
 lapply(dflist83, function(x) {unique(names(x))})
 
 
-###########################################################################################
-# 3) Generate lists:-----------------------------------------------------------------------
-path_list_SM <- "C:/Users/Usuario/Documents/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/SM"
 
-# Localities:------------------------------------------------------------------------------
-sites <- data.frame(matrix(ncol=3, nrow=83))
-names(sites) <- c("Site", "Subset", "Comment")
-sites$Site <- sort(unique(NDT83$SiteName))
-sites$Subset <- "83"
-sites$Subset <- ifelse(sites$Site %in% NDT67$SiteName, "67", sites$Subset)
-sites$Subset <- ifelse(sites$Site %in% NDT53$SiteName, "53", sites$Subset)
-sites$Comment <- ifelse(sites$Subset=="67", "The historical assemblage could be reconstructed. The contemporary locality didn't sustain life anymore", NA)
-sites$Comment <- ifelse(sites$Subset=="83", "Assemblage data for the two periods is not comparable", sites$Comment)
-sites$Comment <- ifelse(sites$Site %in% c("rio Marabasco", "rio Coscomate", "laguna El Barril", "rio en 6 de Enero",
-                                          "rio Cuarenta", "Los Vergeles", "presa sobre el rio Carrizal"), "NOT IN SM PAPER 2018. Assemblage data for the two periods is not comparable", sites$Comment)
-
-sum(sites$Comment=="NOT IN SM PAPER 2018. Assemblage data for the two periods is not comparable", na.rm=T) # 7, OK
-write.csv2(sites, file=paste0(path_list_SM, "/sites.csv"), row.names=F)
+################################################################################
+# 3) Generate lists for SM:=====================================================
+path_list_SM <- "C:/Users/afe1/OneDrive - University of St Andrews/PHD/ThesisChapterMexico_I/TemporalChange_MexicanFish_C2/Lists/SM"
 
 
-# Anecdotics:------------------------------------------------------------------------------
+# 1) Localities:----------------------------------------------------------------
+LocalityList <- NDT83[, names(NDT83) %in% c("SiteNameE", "DrainageBasinE",
+                                            "SiteType", "Latitude", "Longitude")]
+LocalityList$Subset <- "83"
+LocalityList$Subset <- ifelse(LocalityList$SiteNameE %in% NDT67$SiteNameE, "67", LocalityList$Subset)
+LocalityList$Subset <- ifelse(LocalityList$SiteNameE %in% NDT53$SiteNameE, "53", LocalityList$Subset)
+
+LocalityList$Comment <- ifelse(LocalityList$Subset=="53", "Assemblage data are comparable for both periods", NA)
+LocalityList$Comment <- ifelse(LocalityList$Subset=="67", "The historical assemblage could be reconstructed but in 2005 the locality did not sustain life anymore", LocalityList$Comment)
+LocalityList$Comment <- ifelse(LocalityList$Subset=="83", "Assemblage data are not comparable between time periods", LocalityList$Comment)
+sort(unique(LocalityList$SiteNameE[LocalityList$Comment=="Assemblage data are not comparable between time periods"]))
+sum(LocalityList$Comment != "Assemblage data are not comparable between time periods") # 67
+
+LocalityList <- LocalityList %>% relocate(c(SiteNameE, DrainageBasinE), .before=Latitude)
+
+write.csv(LocalityList, file=paste0(path_list_SM, "/LocalityList.csv"), row.names=F)
+
+
+# 2) Anecdotics:----------------------------------------------------------------
 
 anec <- NDT83$Anectodics
 anec <- anec[!is.na(anec)] # % observations
@@ -224,11 +225,14 @@ status <- c("N", "?",
              "?", "E")
 anectax <- data.frame("Species"=anectax, "Status"=status)
 
-write.csv2(anectax, file=paste0(path_list_SM, "/anectax.csv"), row.names=F)
+write.csv(anectax, file=paste0(path_list_SM, "/anectax.csv"), row.names=F)
 
-# Species:
-vec_taxa76 <- lapply(dflist83, function(x) {x<- x[!x$SiteNameE %in% c("rio Marabasco", "rio Coscomate", "laguna El Barril", "rio en 6 de Enero",
-                                                                      "rio Cuarenta", "Los Vergeles", "presa sobre el rio Carrizal"),]})
+
+# 3) Species: ------------------------------------------------------------------
+sort(unique(dflist83[[4]]$SiteNameE))
+vec_taxa76 <- lapply(dflist83, function(x) {x<- x[!x$SiteNameE %in% c("Marabasco River", "Coscomate River", "El Barril Lagoon",
+                                                                      "River at 6 de Enero","Cuarenta River", "Los Vergeles", 
+                                                                      "Reservoir above the Carrizal River"),]})
 vec_taxa76 <- lapply(vec_taxa76, function(x) {x<- x[,-c(1:2)]})
 
 vec_taxa76 <- lapply(vec_taxa76, function(x) {x[!colSums(x)==0,]})
@@ -242,44 +246,88 @@ vec_taxa <- sort(unique(c(names(dflist83[[1]]), names(dflist83[[2]]),
 vec_taxa <- vec_taxa[!vec_taxa %in% c("SiteNameE", "DrainageBasinE")]
 
 setdiff(vec_taxa, vec_taxa76) # 0, OK
+setdiff(vec_taxa76, vec_taxa) # 0, OK
 
 taxa <- data.frame(matrix(ncol=5, nrow=113))
 names(taxa) <- c("Genus_species", "Previous", "Updated", "Regional_Status", "Comment")
 
 taxa$Genus_species <- vec_taxa
-taxa$Previous <- tax$Genus_species[match(taxa$Genus_species, tax$Genus_species_ECF)]
+taxa$Previous <- tax$Genus_species[match(taxa$Genus_species, tax$Genus_species_ECF)]  # re-updated April 2024
 # remember that here, for each "taxa$Genus_species" there might be multiple "tax$Genus_species"(i.e. previous)
 sum(is.na(taxa$Previous))
 taxa$Previous[taxa$Genus_species=="Dajaus monticola"] <- "Agonostomus monticola"
 taxa$Previous[taxa$Genus_species=="Algansea monticola"] <- "Algansea monticola"
 taxa$Previous[taxa$Genus_species=="Gambusia senilis"] <- "Gambusia senilis"
 
-taxa$Updated <- ifelse(taxa$Previous==taxa$Genus_species, "no", "yes")
+taxa$Genus_species[taxa$Previous=="Notropis calientis"] <- "Aztecula calientis"       # April 2024
+taxa$Genus_species[taxa$Previous=="Notropis amecae"] <- "Aztecula amecae"             # April 2024
+taxa$Genus_species[taxa$Previous=="Hybopsis boucardi"] <- "Graodus boucardi"          # April 2024
+taxa$Previous[taxa$Genus_species=="Graodus boucardi"] <- "Hybopsis/Notropis boucardi" # April 2024
 
-# Regional status:
-# Introduced:
+taxa$Updated <- ifelse(taxa$Previous==taxa$Genus_species, "no", "yes")
+sum(is.na(taxa$Updated))
+sum(is.na(taxa$Genus_species))
+
+
+# Add authorities: -------------------------------------------------------------
+require(taxize)
+listsps <- sort(unique(taxa$Genus_species))
+auth <- gnr_resolve(listsps, data_source_ids=11, canonical=FALSE)  
+auth <- auth[!auth$matched_name=="Ameca splendens Gartner, 1981",]  # rm dups for some species cross-checking with ESC Cat April 2024
+auth <- auth[!auth$matched_name=="Astyanax aeneus (Hensel, 1870)",] 
+auth <- auth[!auth$matched_name=="Astyanax Stål, 1867",] 
+auth <- auth[!auth$matched_name=="Characodon lateralis Garman, 1895",] 
+auth <- auth[!auth$matched_name=="Chirostoma estor de Buen, 1940",] 
+auth <- auth[!auth$matched_name=="Goodea atripinnis Meek, 1907",] 
+auth <- auth[!auth$matched_name=="Oreochromis niloticus (Greenwood, 1960)",] 
+auth <- auth[!auth$matched_name=="Oreochromis Carnevale et al., 2003",] 
+auth <- auth[!auth$matched_name=="Poecilia mexicana De Filippi, 1940",] 
+auth$matched_name[auth$matched_name=="Poecilia"] <- "Poecilia sp Bloch & Schneider 1801"                        # ESC Catalog
+auth <- auth[!auth$matched_name=="Poecilia Heinemann, 1870",]
+auth <- auth[!auth$matched_name=="Poecilia Taczanowski, 1872",]
+auth <- auth[!auth$matched_name=="Poecilia Schrank, 1802",]
+auth <- auth[!auth$matched_name=="Pseudoxiphophorus bimaculatus (Steindachner, 1863)",]
+auth$matched_name[auth$matched_name=="Pseudoxiphophorus Bleeker, 1860"] <- "Pseudoxiphophorus sp Bleeker, 1860" # ESC Catalog
+
+auth$matched_name[auth$matched_name=="Astyanax Baird & Girard, 1854"] <- "Astyanax sp Baird & Girard, 1854"     # ESC Catalog
+auth$matched_name[auth$matched_name=="Aztecula Jordan & Evermann, 1898"] <- "Aztecula amecae (Chernoff & Miller 1986)" # ESC Catalog
+auth$matched_name[auth$matched_name=="Chirostoma Swainson, 1839"] <- "Chirostoma sp Swainson, 1839"                    # ESC Catalog
+auth$matched_name[auth$matched_name=="Gila Baird & Girard, 1853"] <- "Gila sp Baird & Girard, 1853"                    # ESC Catalog
+auth$matched_name[auth$matched_name=="Graodus Günther, 1868"] <- "Graodus sp Günther, 1868"                            # ESC Catalog
+auth$matched_name[auth$matched_name=="Oreochromis Günther, 1889"] <- "Oreochromis sp Günther, 1889"                    # ESC Catalog
+
+
+taxa$Authority <- auth$matched_name[match(taxa$Genus_species, auth$user_supplied_name)]
+sum(is.na(taxa$Authority))
+
+
+# Regional status: -------------------------------------------------------------
+
+################ Introduced:
 introduced <- c("Oreochromis aureus", "Oreochromis mossambicus", "Oreochromis niloticus", "Oreochromis sp",
                 "Xiphophorus hellerii", "Cyprinus carpio", "Poecilia reticulata", "Pseudoxiphophorus bimaculatus",
                 "Pseudoxiphophorus jonesii", "Pseudoxiphophorus sp", "Lepomis macrochirus", "Micropterus salmoides",
                 "Xiphophorus maculatus", "Gambusia yucatana", "Poeciliopsis gracilis", "Pomoxis nigromaculatus",
                 "Amatitlania nigrofasciata", "Astatotilapia burtoni", "Carassius auratus", "Gambusia affinis", "Xiphophorus variatus")
 
-# Ctenopharyngodon idella (in paper but not in database)
+# NOTE: Ctenopharyngodon idella (in paper but not in database)
 
-taxa$Regional_Status <- ifelse(taxa$Genus_species %in% introduced, "Introduced", "Native") # OK
+taxa$Regional_Status <- ifelse(taxa$Genus_species %in% introduced, "Introduced", "Native")      # OK
 
-# Extirpated:
+
+############### Extirpated:
 ext <- setdiff(names(dflist83[[2]]), names(dflist83[[4]]))
-
+ext
 taxa$Regional_Status <- ifelse(taxa$Genus_species %in% ext, "Extirpated", taxa$Regional_Status) # OK
+taxa$Regional_Status[taxa$Genus_species=="Aztecula amecae"] <- "Extirpated"                     # Notropis amecae
 
 sum(taxa$Regional_Status=="Introduced")
 sum(taxa$Regional_Status=="Native")
 sum(taxa$Regional_Status=="Extirpated")
+sum(is.na(taxa$Regional_Status))
 
 
-# Comments:
-
+############## Comments:
 taxa$Comment <- ifelse(taxa$Genus_species %in% c("TBD1", "TBD2", "TBD3"), "Check Catalog to decide between 2 options", taxa$Comment)
 
 taxa$Comment <- ifelse(taxa$Genus_species %in% c("Mayaheros beani", "Tampichthys mandibularis"), 
@@ -291,33 +339,117 @@ taxa$Regional_Status <- ifelse(taxa$Genus_species %in% c("Chirostoma chapalae"),
 taxa$Comment <- ifelse(taxa$Genus_species %in% c("Chirostoma chapalae"), 
                        "extirpated in native locs, but translocated in P. Cointzio", taxa$Comment)
 
-write.csv2(taxa, file=paste0(path_list_SM, "/taxa.csv"), row.names=F)
-
-additionalSM <- c("Menidia grandocule", "Menidia lucius", "Algansea avia", "Algansea lacustris")
-# Added comment in word.
-
-
-
-# TO FINISH!
+############# Additions: TBD
+# NOTE: anecdotics not included...
+# NOTE: 
+# additionalSM <- c("Menidia grandocule", "Menidia lucius", "Algansea avia", "Algansea lacustris") Add?
 
 
+# IUCN Status: -----------------------------------------------------------------
+#require(red)
+#redlist_api_key <- "YOUR_API_KEY"
+#species <- taxa$Genus_species[!]
+#status_list <- lapply(, function(s) {
+#  rl_search(query = s, token = redlist_api_key)
+#})
 
-# 3) Data formatting for assemblage-level analysis:--------------------------------------
-ContAll <- full_join(ContN, ContE, by=c("SiteNameE", "DrainageBasinE"))
-names(ContAll)
+#for (i in seq_along(species)) {
+#  cat(species[i], ": ", status_list[[i]]$result[[1]]$category, "\n")
+#}
+
+# https://www.gbif.org/dataset/19491596-35ae-4a91-9a98-85cf505f1bd3
+iucn_tax <- read_delim("C:/Users/afe1/Downloads/iucn-2022-1/taxon.txt", delim = "\t", col_names = F)
+iucn_snap <- read_delim("C:/Users/afe1/Downloads/iucn-2022-1/distribution.txt", delim = "\t", col_names = F)
+
+
+species <- taxa$Genus_species
+species <- species[!species %in% c("Astyanax sp", "Chirostoma sp", "Gila sp",
+                                   "Poecilia sp", "TBD1","TBD2","TBD3", "Pseudoxiphophorus sp", "Oreochromis sp",
+                                   "Poeciliopsis sp")]
+
+iucn_tax$tax <- paste0(str_split_fixed(iucn_tax$X2, " ", 3)[,1], " ", str_split_fixed(iucn_tax$X2, " ", 3)[,2])
+sub_iucn_tax <- iucn_tax[iucn_tax$tax %in% species,]
+sub_iucn_tax <- sub_iucn_tax[!sub_iucn_tax$X1 %in% c("191249_1","134692299_1",
+                                                     "2270", "4529_1", "4530_1",
+                                                     "166052_8", "180896_1", "166066_1",
+                                                     "23116_1", "133768576_4", "133768576_5",
+                                                     "133768576_6", "133768576_7", "82627914_2"),]
+
+setdiff(species, sub_iucn_tax$tax)
+sub_iucn_tax$status <- iucn_snap$X4[match(sub_iucn_tax$X1, iucn_snap$X1)]
+
+# Aztecula amecae Extinct in the wild (https://www.iucnredlist.org/species/14881/546437)
+# Oreochromis aureus Least Concern (https://www.iucnredlist.org/species/166933/6293101)
+# Notropis boucardi Endangered (https://www.iucnredlist.org/species/191271/1974646)
+# Girardinichthys turneri Critically Endangered (https://www.iucnredlist.org/species/132523146/497499)
+# Aztecula sallaei Least Concern (https://www.iucnredlist.org/species/191255/1974392)
+# Ictalurus dugesii // Can't find, so Data Deficient (https://www.iucnredlist.org/search?taxonomies=102293&searchType=species)
+# Tampichthys dichroma Critically endangered (https://www.iucnredlist.org/species/6624/3135282)
+
+
+taxa$IUCN_Status <- sub_iucn_tax$status[match(taxa$Genus_species, sub_iucn_tax$tax)]
+sort(unique(taxa$Genus_species[is.na(taxa$IUCN_Status)]))
+sort(unique(taxa$IUCN_Status))
+taxa$IUCN_Status <- ifelse(taxa$Genus_species %in% c("Aztecula amecae"), "Extinct in the Wild", taxa$IUCN_Status)
+taxa$IUCN_Status <- ifelse(taxa$Genus_species %in% c("Oreochromis aureus",
+                                                     "Aztecula sallaei"), "Least Concern", taxa$IUCN_Status)
+taxa$IUCN_Status <- ifelse(taxa$Genus_species %in% c("Girardinichthys turneri",
+                                                     "Tampichthys dichroma"), "Critically Endangered", taxa$IUCN_Status)
+taxa$IUCN_Status <- ifelse(taxa$Genus_species %in% c("Graodus boucardi"), "Endangered", taxa$IUCN_Status)
+taxa$IUCN_Status <- ifelse(taxa$Genus_species %in% c("Ictalurus dugesii"), "Data Deficient", taxa$IUCN_Status)
+
+
+# Add families: ----------------------------------------------------------------
+
+#fams <- tax_name(species, get = "family")
+#save(fams, file=paste0(path_list_SM, "/fams.RData"))
+load(paste0(path_list_SM, "/fams.RData"))
+taxa$Family <- fams$family[match(taxa$Genus_species, fams$query)]
+taxa$Family[taxa$Genus_species %in% c("Poeciliopsis sp", "Poecilia sp", "Pseudoxiphophorus sp", 
+                                      "Pseudoxiphophorus jonesii", "Pseudoxiphophorus bimaculatus")] <- "	Poeciliidae"
+taxa$Family[taxa$Genus_species %in% c("Astyanax sp", "Astyanax aeneus")] <- "Characidae"
+taxa$Family[taxa$Genus_species %in% c("Oreochromis sp", "Amatitlania nigrofasciata",
+                                      "Amphilophus istlanus", "Herichthys cyanoguttatus", 
+                                      "Mayaheros beani")] <- "Cichlidae"
+taxa$Family[taxa$Genus_species %in% c("Gila sp")] <- "Cyprinidae"
+taxa$Family[taxa$Genus_species %in% c("Chirostoma mezquital",
+                                      "Chirostoma sp")] <- "Atherinopsidae"
+taxa$Family[taxa$Genus_species %in% c("Dajaus monticola")] <- "Mugilidae"
+taxa$Family[taxa$Genus_species %in% c("Neotoca bilineata", "Xenoophorus captivus", "Xenotoca variata")] <- "Goodeidae"
+taxa$Family[taxa$Genus_species %in% c("Aztecula sallaei", "Graodus boucardi")] <- "Leuciscidae"
+
+
+# tbd: -------------------------------------------------------------------------
+taxa$Family[taxa$Previous %in% "Menidia consocia"] <- "Atherinopsidae"
+taxa$Family[taxa$Previous %in% "Menidia patzcuaro"] <- "Atherinopsidae"
+taxa$Family[taxa$Previous %in% "Scartomyzon austrinus"] <- "Catostomidae"
+
+
+write.csv(taxa, file=paste0(path_list_SM, "/taxa.csv"), row.names=F)
+
+
+################################################################################
+# Data for assemblage-level analyses:===========================================
+ContAll <- full_join(dflist67[[4]], dflist67[[5]], by=c("SiteNameE", "DrainageBasinE"))
+
 
 ContAll$`Goodea atripinnis`<- ContAll$`Goodea atripinnis.x`+ ContAll$`Goodea atripinnis.y`
 ContAll$`Poecilia butleri`<- ContAll$`Poecilia butleri.x`+ ContAll$`Poecilia butleri.y`
 ContAll$`Poecilia sphenops`<- ContAll$`Poecilia sphenops.x`+ ContAll$`Poecilia sphenops.y`
+
 ContAll <- ContAll[, ! names(ContAll) %in% c("Goodea atripinnis.x", "Goodea atripinnis.y",
                                              "Poecilia butleri.x", "Poecilia butleri.y",
                                              "Poecilia sphenops.x", "Poecilia sphenops.y")]
-
+check <- sort(unique(names(ContAll)))
 sum(is.na(ContAll[,-c(1:2)]))
 ContAll[is.na(ContAll)] <- 0
 sum(is.na(ContAll[,-c(1:2)]))
 save(ContAll, file="ContAll.RData")
 
+load("ContAll.RData")
+HNC <- dflist67[[1]]
+HNB <- dflist67[[2]]
+ContN <- dflist67[[4]]
 l <- bind_rows(HNC, HNB, ContN, ContAll)
 l[is.na(l)] <- 0
 sum(is.na(l)) # 0
