@@ -365,15 +365,15 @@ text-align: justify}
 <h3><strong>Dataset description:</strong></h3>
 This dataset represents the biodiversity of freshwater fish assemblages
 along the Trans‐Mexican Volcanic Belt, in Central Mexico. This region is
-the main area of distribution of the Goodeidae, a freshwater fish family
-endemic of Mexico.
+the main area of distribution of the Goodeinae, a subfamily of
+freshwater fish endemic of Mexico.
 <p>
  
 </p>
 The dataset contains fish incidence (i.e. presence/absence) data from
 two time periods: historical - prior to 1989 - and contemporary - year
 2005-. The sites were selected to represent the main area of occurrence
-of the fish in the family Goodeidae.
+of the fish in Goodeinae.
 <p>
  
 </p>
@@ -386,18 +386,17 @@ local knowledge of the authors (Gesundheit and Macias Garcia, 2018).
 <p>
  
 </p>
-Contemporary period (i.e 2005 survey): The aim of this survey was to
-obtain a complete inventory of all fish present in each sampling
-location. Sampling took place always during daylight hours and in 13
-different trips over the course of the year 2005. The sampling
-techniques used included seining (4m2 seine net, 4mm mesh size),
-trapping (40‐cm‐long minnow traps, 5‐mm mesh size), and setting a gill
-net (20‐m2 gill net, mesh sizes of 1.3, 5.7, 7.6, and 8.9 cm). These
-methods were combined in order to sample fish of different sizes and
-living in different habitats. Sampling effort was adapted to the area
-and characteristics of each site in order to maximise the probabibility
-of sampling all species present. For more information, see Gesundheit
-and Macias Garcia (2018).
+Contemporary period (2005 survey): The aim of this survey was to obtain
+a complete inventory of all fish present in each sampling location.
+Sampling took place always during daylight hours and in 13 different
+trips over the course of the year 2005. The sampling techniques used
+included seining (4m2 seine net, 4mm mesh size), trapping (40‐cm‐long
+minnow traps, 5‐mm mesh size), and setting a gill net (20‐m2 gill net,
+mesh sizes of 1.3, 5.7, 7.6, and 8.9 cm). These methods were combined in
+order to sample fish of different sizes and living in different
+habitats. Sampling effort was adapted to the area and characteristics of
+each site in order to maximise the probabibility of sampling all species
+present. For more information, see Gesundheit and Macias Garcia (2018).
 <p>
  
 </p>
@@ -436,7 +435,6 @@ library(readxl)
 library(stringdist)
 library(hablar)
 library(sp)
-library(rgeos)
 library(GeoRange)
 library(kableExtra)
 library(fishtree)
@@ -676,7 +674,7 @@ NDT$SiteType &lt;- ifelse(NDT$SiteName %in% c(&quot;Texcoco 1&quot;, &quot;Texco
 sum(is.na(NDT$SiteType)) # OK
 # NA: rio en 6 de Enero.
 # NA: presa sobre el rio Carrizal 
-# NA: rio Cuarenta (considerada un outlier por Pablo &amp; Tino)
+# NA: rio Cuarenta (considered an outlier according to Pablo &amp; Tino)
 # NA: Los Vergeles</code></pre>
 <p>
  
@@ -713,6 +711,13 @@ range(NDT$Longitude) # -104.90  -98.45</code></pre>
     geom_point(data = NDT,
                aes(x = Longitude, y = Latitude), size=2.5)+
   theme_classic())</code></pre>
+<pre><code>## Warning: `fortify(&lt;SpatialPolygonsDataFrame&gt;)` was deprecated in ggplot2 3.4.4.
+## ℹ Please migrate to sf.
+## ℹ The deprecated feature was likely used in the ggplot2 package.
+##   Please report the issue at &lt;https://github.com/tidyverse/ggplot2/issues&gt;.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+## generated.</code></pre>
 <img src="data:image/png;base64,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" width="672" />
 <p>
  
@@ -724,12 +729,12 @@ assemblage according to data collectors.
 <li>?Z. quitzeoensis?) in “manantial Molino de Chapultepec”</li>
 <li>A. regalis (?) in “manantial/balneario en Tocumbo”</li>
 </ul></li>
-<li>Add a few species observations:
+<li>Modify one observation (from non-native to native):
 <ul>
 <li>Gambusia senilis considered native in “manantial en 27 de noviembre”
-despite the records from the historical collectors Humphries y Smith.
-Miller mentions similar populations possibly of G senilis in the area
-and, in 2005, the sps was found in two close reservoirs, so it was
+despite the records from the historical collectors Humphries &amp;
+Smith. Miller mentions similar populations possibly of G senilis in the
+area and, in 2005, the sps was found in two close reservoirs, so it was
 considered more likely that the species was native and not translocated
 in this locality.</li>
 </ul></li>
@@ -785,7 +790,9 @@ NDT$DrainageBasinE &lt;- plyr::revalue(NDT$DrainageBasin, c(&quot;alto Lerma&quo
                                                         &quot;rio Naranjo - Coahuayana&quot;=&quot;Naranjo - Coahuayana River&quot;,
                                                         &quot;rio Panuco&quot;=&quot;Panuco River&quot;,
                                                         &quot;rio Purificacion&quot;=&quot;Purificacion River&quot;,
-                                                        &quot;rio San Pedro Mezquital&quot;=&quot;San Pedro Mezquital River&quot;, &quot;bajo Lerma&quot;=&quot;Lower Lerma&quot;, &quot;lago de Zirahuen&quot;=&quot;Lake Zirahuen&quot;))
+                                                        &quot;rio San Pedro Mezquital&quot;=&quot;San Pedro Mezquital River&quot;, 
+                                                        &quot;bajo Lerma&quot;=&quot;Lower Lerma&quot;, 
+                                                        &quot;lago de Zirahuen&quot;=&quot;Lake Zirahuen&quot;))
 sort(unique(NDT$DrainageBasinE))</code></pre>
 <pre><code>##  [1] &quot;Ameca River&quot;                &quot;Armeria River&quot;             
 ##  [3] &quot;Balsas River&quot;               &quot;Cihuatlan River&quot;           
@@ -934,7 +941,30 @@ sort(unique(NDT$DrainageBasinE))</code></pre>
                                                &quot;trib. Ayuquila River N of Cofradia de Duendes&quot;=&quot;Tributary to Ayuquila River&quot;,
                                                &quot;trib. rio Tamazula&quot;=&quot;Tributary to Tamazula River&quot;,
                                                &quot;trib. rio Tuxpan&quot;=&quot;Tributary to Tuxpan River&quot;,
-                                               &quot;canales en El Porvenir&quot;=&quot;Canals at El Porvenir&quot;, &quot;lago de Chapala en Mezcala&quot;=&quot;Lake Chapala at Mezcala&quot;, &quot;lago de Cuitzeo&quot;=&quot;Lake Cuitzeo&quot;, &quot;lago de Patzcuaro&quot;=&quot;Patzcuaro Lake&quot;, &quot;lago de Zirahuen&quot;=&quot;Zirahuen Lake&quot;,&quot;laguna de La Media Luna&quot;=&quot;La Media Luna Lagoon&quot;, &quot;laguna de San Marcos&quot;=&quot;San Marcos Lagoon&quot;, &quot;laguna El Barril&quot;=&quot;El Barril Lagoon&quot;, &quot;manantial cerca de Illescas&quot;=&quot;Unnamed spring outside Illescas&quot;, &quot;manantial El Sacristan&quot;=&quot;El Sacristan Spring&quot;, &quot;manantial en Cerro Gordo&quot;=&quot;Unnamed spring at Cerro Gordo&quot;, &quot;presa El Gigante&quot;=&quot;El Gigante Reservoir&quot;, &quot;presa sobre el rio Carrizal&quot;=&quot;Reservoir above the Carrizal River&quot;, &quot;rio Coscomate&quot;=&quot;Coscomate River&quot;, &quot;rio Cuarenta&quot;=&quot;Cuarenta River&quot;, &quot;rio en 6 de Enero&quot;=&quot;River at 6 de Enero&quot;, &quot;rio Gde. de Santiago en Poncitlan&quot;=&quot;Grande de Santiago River at Poncitlan&quot;, &quot;rio Marabasco&quot;=&quot;Marabasco River&quot;, &quot;rio Nexapa&quot;=&quot;Nexapa River&quot;, &quot;rio Turbio cerca de Cueramaro&quot;=&quot;Turbio River E of Cueramaro&quot;,&quot;rio Turbio cerca de Manuel Doblado&quot;=&quot;Turbio River NE of Manuel Doblado&quot;, &quot;rio Turbio en San Juan de la Puerta&quot;=&quot;Turbio River at San Juan de La Puerta&quot;, &quot;trib. del rio Lerma en Tanhuato&quot;=&quot;Tributary to Lerma River at Tanhuato&quot;, &quot;manantial/balneario El Rincon&quot;=&quot;Manantial/balneario El Rincon&quot;))
+                                               &quot;canales en El Porvenir&quot;=&quot;Canals at El Porvenir&quot;, 
+                                               &quot;lago de Chapala en Mezcala&quot;=&quot;Lake Chapala at Mezcala&quot;, 
+                                               &quot;lago de Cuitzeo&quot;=&quot;Lake Cuitzeo&quot;, 
+                                               &quot;lago de Patzcuaro&quot;=&quot;Patzcuaro Lake&quot;, 
+                                               &quot;lago de Zirahuen&quot;=&quot;Zirahuen Lake&quot;,
+                                               &quot;laguna de La Media Luna&quot;=&quot;La Media Luna Lagoon&quot;, 
+                                               &quot;laguna de San Marcos&quot;=&quot;San Marcos Lagoon&quot;, 
+                                               &quot;laguna El Barril&quot;=&quot;El Barril Lagoon&quot;, 
+                                               &quot;manantial cerca de Illescas&quot;=&quot;Unnamed spring outside Illescas&quot;, 
+                                               &quot;manantial El Sacristan&quot;=&quot;El Sacristan Spring&quot;, 
+                                               &quot;manantial en Cerro Gordo&quot;=&quot;Unnamed spring at Cerro Gordo&quot;, 
+                                               &quot;presa El Gigante&quot;=&quot;El Gigante Reservoir&quot;, 
+                                               &quot;presa sobre el rio Carrizal&quot;=&quot;Reservoir above the Carrizal River&quot;, 
+                                               &quot;rio Coscomate&quot;=&quot;Coscomate River&quot;, 
+                                               &quot;rio Cuarenta&quot;=&quot;Cuarenta River&quot;, 
+                                               &quot;rio en 6 de Enero&quot;=&quot;River at 6 de Enero&quot;, 
+                                               &quot;rio Gde. de Santiago en Poncitlan&quot;=&quot;Grande de Santiago River at Poncitlan&quot;, 
+                                               &quot;rio Marabasco&quot;=&quot;Marabasco River&quot;, 
+                                               &quot;rio Nexapa&quot;=&quot;Nexapa River&quot;, 
+                                               &quot;rio Turbio cerca de Cueramaro&quot;=&quot;Turbio River E of Cueramaro&quot;,
+                                               &quot;rio Turbio cerca de Manuel Doblado&quot;=&quot;Turbio River NE of Manuel Doblado&quot;, 
+                                               &quot;rio Turbio en San Juan de la Puerta&quot;=&quot;Turbio River at San Juan de La Puerta&quot;, 
+                                               &quot;trib. del rio Lerma en Tanhuato&quot;=&quot;Tributary to Lerma River at Tanhuato&quot;, 
+                                               &quot;manantial/balneario El Rincon&quot;=&quot;Manantial/balneario El Rincon&quot;))
 sort(unique(NDT$SiteNameE))</code></pre>
 <pre><code>##  [1] &quot;Amborin River&quot;                          
 ##  [2] &quot;Ameca River at La Vega&quot;                 
@@ -1185,141 +1215,141 @@ version of 4 April 2023. <a href="https://www.calacademy.org/scientists/projects
 ## [153] &quot;ya no existe&quot;                                         
 ## [154] &quot;Z  quitzeoensis&quot;                                      
 ## [155] &quot;Z  tequila&quot;</code></pre>
-<pre><code>##   [1] &quot;?&quot;                                      
-##   [2] &quot;A monticola&quot;                            
-##   [3] &quot;Algansea aphanea&quot;                       
-##   [4] &quot;Algansea popoche&quot;                       
-##   [5] &quot;Algansea tincella&quot;                      
-##   [6] &quot;Allodontichthys hubbsi&quot;                 
-##   [7] &quot;Allodontichthys polylepis&quot;              
-##   [8] &quot;Allodontichthys tamazulae&quot;              
-##   [9] &quot;Allodontichthys zonistius&quot;              
-##  [10] &quot;Alloophorus robustus&quot;                   
-##  [11] &quot;Allotoca catarinae&quot;                     
-##  [12] &quot;Allotoca diazi&quot;                         
-##  [13] &quot;Allotoca dugesii&quot;                       
-##  [14] &quot;Allotoca goslinei&quot;                      
-##  [15] &quot;Allotoca maculata&quot;                      
-##  [16] &quot;Allotoca meeki&quot;                         
-##  [17] &quot;Allotoca zacapuensis&quot;                   
-##  [18] &quot;Ameca splendens&quot;                        
-##  [19] &quot;Archocentrus nigrofasciatus&quot;            
-##  [20] &quot;Astyanax aeneus&quot;                        
-##  [21] &quot;Astyanax fasciatus&quot;                     
-##  [22] &quot;Astyanax mexicanus&quot;                     
-##  [23] &quot;Astyanax sp&quot;                            
-##  [24] &quot;Ataeniobius toweri&quot;                     
-##  [25] &quot;Atherinella balsana&quot;                    
-##  [26] &quot;Aztecula sallaei&quot;                       
-##  [27] &quot;Bagre sp &amp; Micropterus salmoides&quot;       
-##  [28] &quot;Carassius auratus&quot;                      
-##  [29] &quot;ceased to exist&quot;                        
-##  [30] &quot;Chapalichthys encaustus&quot;                
-##  [31] &quot;Chapalichthys pardalis&quot;                 
-##  [32] &quot;Characodon audax&quot;                       
-##  [33] &quot;Characodon lateralis&quot;                   
-##  [34] &quot;Cichlasoma bartoni&quot;                     
-##  [35] &quot;Cichlasoma beani&quot;                       
-##  [36] &quot;Cichlasoma istlanum&quot;                    
-##  [37] &quot;Cichlasoma labridens&quot;                   
-##  [38] &quot;Cualac tessellatus&quot;                     
-##  [39] &quot;Cyprinodon meeki&quot;                       
-##  [40] &quot;Cyprinus carpio&quot;                        
-##  [41] &quot;Dionda dichroma&quot;                        
-##  [42] &quot;Dionda mandibularis&quot;                    
-##  [43] &quot;Dry&quot;                                    
-##  [44] &quot;foul water&quot;                             
-##  [45] &quot;Gambusia affinis&quot;                       
-##  [46] &quot;Gambusia cf senilis&quot;                    
-##  [47] &quot;Gambusia yucatana&quot;                      
-##  [48] &quot;Gila sp&quot;                                
-##  [49] &quot;Girardinichthys multiradiatus&quot;          
-##  [50] &quot;Girardinichthys viviparus&quot;              
-##  [51] &quot;Gobiesox fluviatilis&quot;                   
-##  [52] &quot;Goodea atripinnis&quot;                      
-##  [53] &quot;Haplochromis burtoni&quot;                   
-##  [54] &quot;Herichthys cf cyanoguttatus&quot;            
-##  [55] &quot;Herichthys cyanoguttatus&quot;               
-##  [56] &quot;Heterandria bimaculata&quot;                 
-##  [57] &quot;Heterandria jonesii&quot;                    
-##  [58] &quot;Heterandria sp&quot;                         
-##  [59] &quot;Hubbsina turneri&quot;                       
-##  [60] &quot;Hybopsis boucardi&quot;                      
-##  [61] &quot;Hybopsis calientis&quot;                     
-##  [62] &quot;Ictalurus dugesii&quot;                      
-##  [63] &quot;Ictalurus mexicanus&quot;                    
-##  [64] &quot;Ilyodon furcidens&quot;                      
-##  [65] &quot;Ilyodon whitei&quot;                         
-##  [66] &quot;is the locality&quot;                        
-##  [67] &quot;it was not the right locality&quot;          
-##  [68] &quot;Lepomis macrochirus&quot;                    
-##  [69] &quot;Menidia aculeata&quot;                       
-##  [70] &quot;Menidia arge&quot;                           
-##  [71] &quot;Menidia attenuata&quot;                      
-##  [72] &quot;Menidia chapalae&quot;                       
-##  [73] &quot;Menidia charari&quot;                        
-##  [74] &quot;Menidia consocia&quot;                       
-##  [75] &quot;Menidia estor&quot;                          
-##  [76] &quot;Menidia humboldtiana&quot;                   
-##  [77] &quot;Menidia jordani&quot;                        
-##  [78] &quot;Menidia labarcae&quot;                       
-##  [79] &quot;Menidia mezquital&quot;                      
-##  [80] &quot;Menidia patzcuaro&quot;                      
-##  [81] &quot;Menidia riojai&quot;                         
-##  [82] &quot;Menidia sp&quot;                             
-##  [83] &quot;Micropterus salmoides&quot;                  
-##  [84] &quot;no aquatic life&quot;                        
-##  [85] &quot;none&quot;                                   
-##  [86] &quot;Notropis amecae&quot;                        
-##  [87] &quot;Oncorhynchus mykiss&quot;                    
-##  [88] &quot;Oreochromis aureus&quot;                     
-##  [89] &quot;Oreochromis mossambicus&quot;                
-##  [90] &quot;Oreochromis niloticus&quot;                  
-##  [91] &quot;Oreochromis sp&quot;                         
-##  [92] &quot;peces  limpiadores&quot;                     
-##  [93] &quot;Poecilia butleri&quot;                       
-##  [94] &quot;Poecilia cf butleri&quot;                    
-##  [95] &quot;Poecilia cf sphenops&quot;                   
-##  [96] &quot;Poecilia chica&quot;                         
-##  [97] &quot;Poecilia latipunctata&quot;                  
-##  [98] &quot;Poecilia mexicana&quot;                      
-##  [99] &quot;Poecilia reticulata&quot;                    
-## [100] &quot;Poecilia sp&quot;                            
-## [101] &quot;Poecilia sphenops&quot;                      
-## [102] &quot;Poeciliopsis baenschi&quot;                  
-## [103] &quot;Poeciliopsis balsas&quot;                    
-## [104] &quot;Poeciliopsis gracilis&quot;                  
-## [105] &quot;Poeciliopsis infans&quot;                    
-## [106] &quot;Poeciliopsis sp&quot;                        
-## [107] &quot;Poeciliopsis turneri&quot;                   
-## [108] &quot;Poeciliopsis turrubarensis&quot;             
-## [109] &quot;Poeciliopsis viriosa&quot;                   
-## [110] &quot;Pomoxis nigromaculatus&quot;                 
-## [111] &quot;Rhamdia sp&quot;                             
-## [112] &quot;Scartomyzon austrinus&quot;                  
-## [113] &quot;Sicydium multipunctatum&quot;                
-## [114] &quot;Skiffia bilineata&quot;                      
-## [115] &quot;Skiffia francesae&quot;                      
-## [116] &quot;Skiffia lermae&quot;                         
-## [117] &quot;Xenoophorus captivus&quot;                   
-## [118] &quot;Xenotaenia resolanae&quot;                   
-## [119] &quot;Xenotoca eiseni&quot;                        
-## [120] &quot;Xenotoca melanosoma&quot;                    
-## [121] &quot;Xenotoca variata&quot;                       
-## [122] &quot;Xiphophorus hellerii&quot;                   
-## [123] &quot;Xiphophorus maculatus&quot;                  
-## [124] &quot;Xiphophorus variatus&quot;                   
-## [125] &quot;Yuriria alta&quot;                           
-## [126] &quot;Yuriria chapalae&quot;                       
-## [127] &quot;Zoogoneticus quitzeoensis&quot;              
-## [128] &quot;Zoogoneticus tequila&quot;                   
-## [129] &quot;Zoogoneticus tequila y Ameca  splendens&quot;</code></pre>
-<pre><code>## [1] 10</code></pre>
-<pre><code>##  [1] &quot;encontrada seca&quot;             &quot;es la localidad &quot;           
-##  [3] &quot;nada&quot;                        &quot;nada  localidad no propicia&quot;
-##  [5] &quot;ninguno&quot;                     &quot;no era la localidad buscada&quot;
-##  [7] &quot;no hay vida acuatica&quot;        &quot;son aguas negras&quot;           
-##  [9] &quot;trompos &quot;                    &quot;ya no existe&quot;</code></pre>
+<pre><code>##   [1] &quot;A monticola&quot;                           
+##   [2] &quot;Algansea aphanea&quot;                      
+##   [3] &quot;Algansea popoche&quot;                      
+##   [4] &quot;Algansea tincella&quot;                     
+##   [5] &quot;Allodontichthys hubbsi&quot;                
+##   [6] &quot;Allodontichthys polylepis&quot;             
+##   [7] &quot;Allodontichthys tamazulae&quot;             
+##   [8] &quot;Allodontichthys zonistius&quot;             
+##   [9] &quot;Alloophorus robustus&quot;                  
+##  [10] &quot;Allotoca catarinae&quot;                    
+##  [11] &quot;Allotoca diazi&quot;                        
+##  [12] &quot;Allotoca dugesii&quot;                      
+##  [13] &quot;Allotoca goslinei&quot;                     
+##  [14] &quot;Allotoca maculata&quot;                     
+##  [15] &quot;Allotoca meeki&quot;                        
+##  [16] &quot;Allotoca zacapuensis&quot;                  
+##  [17] &quot;Ameca splendens&quot;                       
+##  [18] &quot;Archocentrus nigrofasciatus&quot;           
+##  [19] &quot;Astyanax aeneus&quot;                       
+##  [20] &quot;Astyanax fasciatus&quot;                    
+##  [21] &quot;Astyanax mexicanus&quot;                    
+##  [22] &quot;Astyanax sp&quot;                           
+##  [23] &quot;Ataeniobius toweri&quot;                    
+##  [24] &quot;Atherinella balsana&quot;                   
+##  [25] &quot;Aztecula sallaei&quot;                      
+##  [26] &quot;Bagre sp &amp; Micropterus salmoides&quot;      
+##  [27] &quot;Carassius auratus&quot;                     
+##  [28] &quot;ceased to exist&quot;                       
+##  [29] &quot;Chapalichthys encaustus&quot;               
+##  [30] &quot;Chapalichthys pardalis&quot;                
+##  [31] &quot;Characodon audax&quot;                      
+##  [32] &quot;Characodon lateralis&quot;                  
+##  [33] &quot;Cichlasoma bartoni&quot;                    
+##  [34] &quot;Cichlasoma beani&quot;                      
+##  [35] &quot;Cichlasoma istlanum&quot;                   
+##  [36] &quot;Cichlasoma labridens&quot;                  
+##  [37] &quot;Cualac tessellatus&quot;                    
+##  [38] &quot;Cyprinodon meeki&quot;                      
+##  [39] &quot;Cyprinus carpio&quot;                       
+##  [40] &quot;Dionda dichroma&quot;                       
+##  [41] &quot;Dionda mandibularis&quot;                   
+##  [42] &quot;Dry&quot;                                   
+##  [43] &quot;foul water&quot;                            
+##  [44] &quot;Gambusia affinis&quot;                      
+##  [45] &quot;Gambusia cf senilis&quot;                   
+##  [46] &quot;Gambusia yucatana&quot;                     
+##  [47] &quot;Gila sp&quot;                               
+##  [48] &quot;Girardinichthys multiradiatus&quot;         
+##  [49] &quot;Girardinichthys viviparus&quot;             
+##  [50] &quot;Gobiesox fluviatilis&quot;                  
+##  [51] &quot;Goodea atripinnis&quot;                     
+##  [52] &quot;Haplochromis burtoni&quot;                  
+##  [53] &quot;Herichthys cf cyanoguttatus&quot;           
+##  [54] &quot;Herichthys cyanoguttatus&quot;              
+##  [55] &quot;Heterandria bimaculata&quot;                
+##  [56] &quot;Heterandria jonesii&quot;                   
+##  [57] &quot;Heterandria sp&quot;                        
+##  [58] &quot;Hubbsina turneri&quot;                      
+##  [59] &quot;Hybopsis boucardi&quot;                     
+##  [60] &quot;Hybopsis calientis&quot;                    
+##  [61] &quot;Ictalurus dugesii&quot;                     
+##  [62] &quot;Ictalurus mexicanus&quot;                   
+##  [63] &quot;Ilyodon furcidens&quot;                     
+##  [64] &quot;Ilyodon whitei&quot;                        
+##  [65] &quot;is the locality&quot;                       
+##  [66] &quot;it was not the right locality&quot;         
+##  [67] &quot;Lepomis macrochirus&quot;                   
+##  [68] &quot;Menidia aculeata&quot;                      
+##  [69] &quot;Menidia arge&quot;                          
+##  [70] &quot;Menidia attenuata&quot;                     
+##  [71] &quot;Menidia chapalae&quot;                      
+##  [72] &quot;Menidia charari&quot;                       
+##  [73] &quot;Menidia consocia&quot;                      
+##  [74] &quot;Menidia estor&quot;                         
+##  [75] &quot;Menidia humboldtiana&quot;                  
+##  [76] &quot;Menidia jordani&quot;                       
+##  [77] &quot;Menidia labarcae&quot;                      
+##  [78] &quot;Menidia mezquital&quot;                     
+##  [79] &quot;Menidia patzcuaro&quot;                     
+##  [80] &quot;Menidia riojai&quot;                        
+##  [81] &quot;Menidia sp&quot;                            
+##  [82] &quot;Micropterus salmoides&quot;                 
+##  [83] &quot;no aquatic life&quot;                       
+##  [84] &quot;none&quot;                                  
+##  [85] &quot;Notropis amecae&quot;                       
+##  [86] &quot;Oncorhynchus mykiss&quot;                   
+##  [87] &quot;Oreochromis aureus&quot;                    
+##  [88] &quot;Oreochromis mossambicus&quot;               
+##  [89] &quot;Oreochromis niloticus&quot;                 
+##  [90] &quot;Oreochromis sp&quot;                        
+##  [91] &quot;peces  limpiadores&quot;                    
+##  [92] &quot;Poecilia butleri&quot;                      
+##  [93] &quot;Poecilia cf butleri&quot;                   
+##  [94] &quot;Poecilia cf sphenops&quot;                  
+##  [95] &quot;Poecilia chica&quot;                        
+##  [96] &quot;Poecilia latipunctata&quot;                 
+##  [97] &quot;Poecilia mexicana&quot;                     
+##  [98] &quot;Poecilia reticulata&quot;                   
+##  [99] &quot;Poecilia sp&quot;                           
+## [100] &quot;Poecilia sphenops&quot;                     
+## [101] &quot;Poeciliopsis baenschi&quot;                 
+## [102] &quot;Poeciliopsis balsas&quot;                   
+## [103] &quot;Poeciliopsis gracilis&quot;                 
+## [104] &quot;Poeciliopsis infans&quot;                   
+## [105] &quot;Poeciliopsis sp&quot;                       
+## [106] &quot;Poeciliopsis turneri&quot;                  
+## [107] &quot;Poeciliopsis turrubarensis&quot;            
+## [108] &quot;Poeciliopsis viriosa&quot;                  
+## [109] &quot;Pomoxis nigromaculatus&quot;                
+## [110] &quot;Rhamdia sp&quot;                            
+## [111] &quot;Scartomyzon austrinus&quot;                 
+## [112] &quot;Sicydium multipunctatum&quot;               
+## [113] &quot;Skiffia bilineata&quot;                     
+## [114] &quot;Skiffia francesae&quot;                     
+## [115] &quot;Skiffia lermae&quot;                        
+## [116] &quot;trompos&quot;                               
+## [117] &quot;Xenoophorus captivus&quot;                  
+## [118] &quot;Xenotaenia resolanae&quot;                  
+## [119] &quot;Xenotoca eiseni&quot;                       
+## [120] &quot;Xenotoca melanosoma&quot;                   
+## [121] &quot;Xenotoca variata&quot;                      
+## [122] &quot;Xiphophorus hellerii&quot;                  
+## [123] &quot;Xiphophorus maculatus&quot;                 
+## [124] &quot;Xiphophorus variatus&quot;                  
+## [125] &quot;Yuriria alta&quot;                          
+## [126] &quot;Yuriria chapalae&quot;                      
+## [127] &quot;Zoogoneticus quitzeoensis&quot;             
+## [128] &quot;Zoogoneticus tequila&quot;                  
+## [129] &quot;Zoogoneticus tequila y Ameca splendens&quot;</code></pre>
+<pre><code>## [1] 9</code></pre>
+<pre><code>## [1] &quot;encontrada seca&quot;             &quot;es la localidad &quot;           
+## [3] &quot;nada&quot;                        &quot;nada  localidad no propicia&quot;
+## [5] &quot;ninguno&quot;                     &quot;no era la localidad buscada&quot;
+## [7] &quot;no hay vida acuatica&quot;        &quot;son aguas negras&quot;           
+## [9] &quot;ya no existe&quot;</code></pre>
 <p>
  
 </p>
@@ -1403,83 +1433,8 @@ sort(unique(NDT$Comments))</code></pre>
 ## [17] &quot;UMMZ 188803 es una colecta extraña. una especie no capturada: probablemente Y. alta&quot;                                                                                
 ## [18] &quot;una especie no capturada&quot;</code></pre>
 <pre class="r"><code>NDT53 &lt;- NDT[!grepl(&quot;No incluida en el conjunto final de 56&quot;, NDT$Comments),]
-sort(unique(NDT$CatalogNumbers))</code></pre>
-<pre><code>##  [1] &quot;-&quot;                                          
-##  [2] &quot;1.USNM 44156  2.UMMZ 189665  3. UMMZ 201547&quot;
-##  [3] &quot;LCAIE&quot;                                      
-##  [4] &quot;UMMZ 108555&quot;                                
-##  [5] &quot;UMMZ 108631&quot;                                
-##  [6] &quot;UMMZ 108647&quot;                                
-##  [7] &quot;UMMZ 118122&quot;                                
-##  [8] &quot;UMMZ 132730&quot;                                
-##  [9] &quot;UMMZ 145306, 173585&quot;                        
-## [10] &quot;UMMZ 160880&quot;                                
-## [11] &quot;UMMZ 160919&quot;                                
-## [12] &quot;UMMZ 160926 (por aproximacion)&quot;             
-## [13] &quot;UMMZ 160927&quot;                                
-## [14] &quot;UMMZ 163008&quot;                                
-## [15] &quot;UMMZ 166456&quot;                                
-## [16] &quot;UMMZ 166708&quot;                                
-## [17] &quot;UMMZ 172153&quot;                                
-## [18] &quot;UMMZ 172165&quot;                                
-## [19] &quot;UMMZ 172181&quot;                                
-## [20] &quot;UMMZ 172191&quot;                                
-## [21] &quot;UMMZ 172200&quot;                                
-## [22] &quot;UMMZ 172216&quot;                                
-## [23] &quot;UMMZ 172232&quot;                                
-## [24] &quot;UMMZ 172243&quot;                                
-## [25] &quot;UMMZ 173544&quot;                                
-## [26] &quot;UMMZ 173555&quot;                                
-## [27] &quot;UMMZ 173558&quot;                                
-## [28] &quot;UMMZ 173568&quot;                                
-## [29] &quot;UMMZ 173962&quot;                                
-## [30] &quot;UMMZ 178315, 183987, 189083&quot;                
-## [31] &quot;UMMZ 178320, 179229&quot;                        
-## [32] &quot;UMMZ 178344, 198850&quot;                        
-## [33] &quot;UMMZ 178348&quot;                                
-## [34] &quot;UMMZ 178364&quot;                                
-## [35] &quot;UMMZ 178371&quot;                                
-## [36] &quot;UMMZ 179226, 202428&quot;                        
-## [37] &quot;UMMZ 179760&quot;                                
-## [38] &quot;UMMZ 181313&quot;                                
-## [39] &quot;UMMZ 186284&quot;                                
-## [40] &quot;UMMZ 187398&quot;                                
-## [41] &quot;UMMZ 188803&quot;                                
-## [42] &quot;UMMZ 189043&quot;                                
-## [43] &quot;UMMZ 189051&quot;                                
-## [44] &quot;UMMZ 189057&quot;                                
-## [45] &quot;UMMZ 189072&quot;                                
-## [46] &quot;UMMZ 189093&quot;                                
-## [47] &quot;UMMZ 189575&quot;                                
-## [48] &quot;UMMZ 189593&quot;                                
-## [49] &quot;UMMZ 192161&quot;                                
-## [50] &quot;UMMZ 192285,6,8&quot;                            
-## [51] &quot;UMMZ 192292&quot;                                
-## [52] &quot;UMMZ 192307&quot;                                
-## [53] &quot;UMMZ 192339&quot;                                
-## [54] &quot;UMMZ 192376&quot;                                
-## [55] &quot;UMMZ 192380&quot;                                
-## [56] &quot;UMMZ 193470&quot;                                
-## [57] &quot;UMMZ 196341&quot;                                
-## [58] &quot;UMMZ 196678&quot;                                
-## [59] &quot;UMMZ 198815&quot;                                
-## [60] &quot;UMMZ 201546&quot;                                
-## [61] &quot;UMMZ 201551&quot;                                
-## [62] &quot;UMMZ 203230&quot;                                
-## [63] &quot;UMMZ 211091&quot;                                
-## [64] &quot;UMMZ 211096&quot;                                
-## [65] &quot;UMMZ 212321&quot;                                
-## [66] &quot;UMMZ 213312&quot;                                
-## [67] &quot;UMMZ 230442&quot;                                
-## [68] &quot;UMMZ 230452&quot;                                
-## [69] &quot;UMMZ 230525&quot;                                
-## [70] &quot;UMMZ 230528&quot;                                
-## [71] &quot;UMMZ 233535&quot;                                
-## [72] &quot;UMMZ 233562&quot;                                
-## [73] &quot;UMMZ 65229&quot;                                 
-## [74] &quot;UMMZ 65230&quot;                                 
-## [75] &quot;USNM 197896 / UMMZ 189604, 198822, 180080&quot;</code></pre>
-<pre class="r"><code>NDT53 &lt;- NDT53[!NDT53$CatalogNumbers==&quot;LCAIE&quot;,]
+#sort(unique(NDT$CatalogNumbers))
+NDT53 &lt;- NDT53[!NDT53$CatalogNumbers==&quot;LCAIE&quot;,]
 
 save(NDT53, file=paste0(path_lists, &quot;/NDT53.RData&quot;))
 write.csv(NDT53, file=paste0(path_lists, &quot;/NDT53.csv&quot;))
@@ -1497,7 +1452,7 @@ Excluded &lt;- Excluded[!grepl(&quot;La consider? un outlier&quot;, Excluded$Com
 Excluded &lt;- Excluded[!Excluded$NativeFound2005 %in% c(&quot;nada, es la localidad?&quot;, &quot;nada, no era la localidad buscada&quot;),] # removed those that might not have been the same locality
 Excluded &lt;- Excluded[!Excluded$NativeFound2005 %in% &quot;confirmamos la presencia de Z. tequila y A. splendens&quot;,] # removed because only qualitative data could be collected in 2005
 Excluded &lt;- Excluded[!Excluded$SiteName %in% c(&quot;rio Marabasco&quot;, &quot;laguna El Barril&quot;),] # remove rio Marabasco, laguna el Barril (no data for the native assemblage)
-
+#sort(unique(Excluded$Comments)) # got OK to include them in the analyses
 NDT67 &lt;- rbind(NDT53, Excluded)
 
 save(NDT67, file=paste0(path_lists, &quot;/NDT67.RData&quot;))
