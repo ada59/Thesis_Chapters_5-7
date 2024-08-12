@@ -1,3 +1,0 @@
-Some of the species measured by me are in the extremes of their genus group, but looking at the measurements they seem ok (E.g. Gila specimens and Moxostoma austrinum).
-I'll leave as they are in Final Revised, and proceed with the analysis with these values.
-Remember that the "previous" plots are generated with the Additional residual scripts and objects.
