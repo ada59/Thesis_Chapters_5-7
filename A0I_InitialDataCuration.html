@@ -11,7 +11,6 @@
 
 <meta name="author" content="Eslava, Ada" />
 
-<meta name="date" content="2021-11-21" />
 
 <title>Appendix 0 Data Curation</title>
 
@@ -352,7 +351,7 @@ display: none;
 
 <h1 class="title toc-ignore">Appendix 0 Data Curation</h1>
 <h4 class="author">Eslava, Ada</h4>
-<h4 class="date">21 Nov 2021</h4>
+<h4 class="date">21 Nov 2021 (and revision August 2024)</h4>
 
 </div>
 
@@ -729,6 +728,8 @@ assemblage according to data collectors.
 <li>?Z. quitzeoensis?) in “manantial Molino de Chapultepec”</li>
 <li>A. regalis (?) in “manantial/balneario en Tocumbo”</li>
 </ul></li>
+<li>Remove H. cf cyanoguttatus from manantial Puerta del Río (uncertain
+observation)</li>
 <li>Modify one observation (from non-native to native):
 <ul>
 <li>Gambusia senilis considered native in “manantial en 27 de noviembre”
@@ -745,6 +746,11 @@ NDT$HistoricalNatCatalog[NDT$SiteName==&quot;manantial/balneario en Tocumbo&quot
 # HistoricalNatBroad:
 NDT$HistoricalNatBroad[NDT$SiteName==&quot;manantial Molino de Chapultepec&quot;] &lt;- &quot;A. diazi, G. atripinnis, S. lermae, A. dugesii, (A. robustus?, X. variata&quot; # String without Z. quitzeoensis
 NDT$HistoricalNatBroad[NDT$SiteName==&quot;manantial/balneario en Tocumbo&quot;] &lt;- &quot;G. atripinnis, C. pardalis&quot; # String without A.regalis
+
+# Contemporary Exotics:
+NDT$ExoticsFound2005[NDT$SiteName==&quot;manantial en Puerta del Rio&quot;]</code></pre>
+<pre><code>## [1] &quot;H. cf. cyanoguttatus, Oreochromis sp., P. mexicana&quot;</code></pre>
+<pre class="r"><code>NDT$ExoticsFound2005[NDT$SiteName==&quot;manantial en Puerta del Rio&quot;] &lt;- &quot;Oreochromis sp., P. mexicana&quot; # string without H. cf. cyanoguttatus
 
 # Check G. cf. senilis (manantial en 27 de noviembre):
 NDT$HistoricalNatCatalog[NDT$SiteName==&quot;manantial en 27 de Nov.&quot;]</code></pre>
