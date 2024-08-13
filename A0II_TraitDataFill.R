@@ -306,7 +306,10 @@ dt <- dt[!dt$Genus.species %in% c("Astyanax sp", "Pseudoxiphophorus sp",
 #NOTE: rm all but Gila sp because they have the exact same traits as other sps.
 
 
-           
+sapply(dt[,c(2:11)], function(x) sum(is.na(x))) # mostly PFs...
+# MBl BEl VEp REs OGp RMl BLs PFv PFs CPt 
+# 0   0   0   0   0   2   0   1  9   2
+(2+1+9+2)/(95*10)*100 # 1.5%           
 
 #===============================================================================
 # Save data: -------------------------------------------------------------------
