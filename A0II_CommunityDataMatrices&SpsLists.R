@@ -35,6 +35,66 @@ load(paste0(lists_path, "/tax.RData"))   # List of species names & taxonomic upd
 
 
 #===============================================================================
+# Deal with unidentified records (addendum): -----------------------------------
+#===============================================================================
+# Given that the traits for these ocurrences are approoximated by those of other
+# species. keeping them in the trait matrix as separate obs would cause problems 
+# as indicated by the functions for assessing the quality of trait space in 
+# the script Species-level_I.
+# therefore, for the purpose of analyses I treat them as the species they've 
+# been approximated by.
+
+
+## Replace Oreochromis sp: -----------------------------------------------------
+NDT67$ExoticsFound2005[NDT67$SiteName=="rio de La Pola"] # for check
+NDT67$ExoticsFound2005 <- gsub("Oreochromis sp.", "O. aureus", NDT67$ExoticsFound2005)
+NDT67$ExoticsFound2005[NDT67$SiteName=="rio de La Pola"] # for check, OK
+
+NDT53$ExoticsFound2005 <- gsub("Oreochromis sp.", "O. aureus", NDT53$ExoticsFound2005)
+
+
+## Replace Poeciliopsis sp: ----------------------------------------------------
+NDT67$ExoticsFound2005[NDT67$SiteName=="canales de Xochimilco"] # for check
+NDT67$ExoticsFound2005 <- gsub("Poeciliopsis sp.", "P. gracilis", NDT67$ExoticsFound2005)
+NDT67$ExoticsFound2005[NDT67$SiteName=="canales de Xochimilco"] # for check, OK
+
+NDT53$ExoticsFound2005 <- gsub("Poeciliopsis sp.", "P. gracilis", NDT53$ExoticsFound2005)
+
+
+## Replace Poecilia sp: --------------------------------------------------------
+NDT67$ExoticsFound2005[NDT67$SiteName=="rio Turbio cerca de El Nopal"] # for check
+NDT67$ExoticsFound2005 <- gsub("Poecilia sp.", "P. sphenops", NDT67$ExoticsFound2005)
+NDT67$ExoticsFound2005[NDT67$SiteName=="rio Turbio cerca de El Nopal"] # for check, OK
+
+NDT53$ExoticsFound2005 <- gsub("Poecilia sp.", "P. sphenops", NDT53$ExoticsFound2005)
+
+## Replace Astyanax sp: --------------------------------------------------------
+NDT67$HistoricalNatBroad <- gsub("Astyanax sp.", "A. mexicanus", NDT67$HistoricalNatBroad)
+NDT67$NativeFound2005 <- gsub("Astyanax sp.", "A. mexicanus", NDT67$NativeFound2005)
+
+NDT53$HistoricalNatBroad <- gsub("Astyanax sp.", "A. mexicanus", NDT53$HistoricalNatBroad)
+NDT53$NativeFound2005 <- gsub("Astyanax sp.", "A. mexicanus", NDT53$NativeFound2005)
+
+
+## Replace Pseudoxiphophorus sp: -----------------------------------------------
+NDT67$ExoticsFound2005 <- gsub("Heterandria sp.", "H. bimaculata", NDT67$ExoticsFound2005)
+NDT53$ExoticsFound2005 <- gsub("Heterandria sp.", "H. bimaculata", NDT53$ExoticsFound2005)
+
+
+## Replace Chirostoma sp: ------------------------------------------------------
+NDT67$HistoricalNatCatalog <- gsub("Menidia sp.", "M. riojai", NDT67$HistoricalNatCatalog)
+NDT53$HistoricalNatCatalog <- gsub("Menidia sp.", "M. riojai", NDT53$HistoricalNatCatalog)
+
+NDT67$HistoricalNatBroad <- gsub("Menidia sp.", "M. riojai", NDT67$HistoricalNatBroad)
+NDT53$HistoricalNatBroad <- gsub("Menidia sp.", "M. riojai", NDT53$HistoricalNatBroad)
+
+NDT67$NativeFound2005 <- gsub("Menidia sp.", "M. riojai", NDT67$NativeFound2005)
+NDT53$NativeFound2005 <- gsub("Menidia sp.", "M. riojai", NDT53$NativeFound2005)
+
+
+
+
+#===============================================================================
 # Initial formatting of data:---------------------------------------------------
 #===============================================================================
 str(NDT53)
@@ -256,7 +316,7 @@ vec_taxa <- sort(unique(c(names(dflist67[[1]]), names(dflist67[[2]]),
                           names(dflist67[[3]]), names(dflist67[[4]]),
                           names(dflist67[[5]])))) # use 67 site subset (i.e., subset for analyses)
 vec_taxa <- vec_taxa[!vec_taxa %in% c("SiteNameE", "DrainageBasinE")] 
-sort(unique(vec_taxa)) # 101 species 
+sort(unique(vec_taxa)) # 95 species 
 # including M. consocia (TBD1) & S. austrinus (TBD3), but not M. patzcuaro (TBD2)
 # excludes H cyanogutattus
 
@@ -274,10 +334,11 @@ setdiff(vec_taxa83, vec_taxa) # taxa in 83 list, but not in 67 subset
 # "Zoogoneticus tequila"
 # "Herichthys cyanoguttatus"
 # "Zoogoneticus tequila y Ameca splendens"
+# PLUS Poecilia sp, Poeciliopsis sp, Oreochromis sp, Chirostoma sp, Astyanax sp, & Pseudoxiphophorus sp
 
 setdiff(vec_taxa, vec_taxa83) # 0, OK
 
-taxa <- data.frame(matrix(ncol=5, nrow=101))
+taxa <- data.frame(matrix(ncol=5, nrow=95))
 names(taxa) <- c("Genus_species", "Previous", "Updated", "Regional_Status", "Comment")
 
 taxa$Genus_species <- vec_taxa
@@ -323,16 +384,21 @@ sum(is.na(taxa$Authority))
 
 ## Regional status: -------------------------------------------------------------
 
-introduced <- c("Oreochromis aureus", "Oreochromis mossambicus", "Oreochromis niloticus", "Oreochromis sp",
-                "Pseudoxiphophorus bimaculatus", "Pseudoxiphophorus jonesii", "Pseudoxiphophorus sp", 
+introduced <- c("Oreochromis aureus", "Oreochromis mossambicus", "Oreochromis niloticus", 
+                "Pseudoxiphophorus bimaculatus", "Pseudoxiphophorus jonesii", 
                 "Cyprinus carpio", "Lepomis macrochirus", "Micropterus salmoides", 
                 "Pomoxis nigromaculatus", "Carassius auratus", 
                 "Xiphophorus maculatus", "Xiphophorus hellerii", "Xiphophorus variatus",
                 "Gambusia yucatana", "Gambusia affinis", 
-                "Poeciliopsis gracilis", "Poecilia reticulata", 
-                "Poecilia sp", "Poeciliopsis sp",
-                "Amatitlania nigrofasciata", "Astatotilapia burtoni") # 23
-# NOTE: Ctenopharyngodon idella (in paper but not in database, considered uncertain)
+                "Poeciliopsis gracilis", "Poecilia reticulata",
+                "Amatitlania nigrofasciata", "Astatotilapia burtoni") 
+
+
+# NOTE 1: 22 (rm Poecilia sp, bc now that it's P sphenops it is native in some sites)
+# rm also Poeciliopsis sp, Oreochromis sp & Pseudoxip. sp bc they've been renamed in addendum
+
+
+# NOTE 2: Ctenopharyngodon idella (in paper but not in database, considered uncertain)
 # additionalSM <- c("Menidia grandocule", "Menidia lucius", "Algansea avia", "Algansea lacustris")
 # in Gesundheit & Macias Garcia 2018 (these are updates)
 
@@ -341,26 +407,30 @@ taxa$Regional_Status <- ifelse(taxa$Genus_species %in% c("Chirostoma chapalae"),
 #taxa$Comment <- ifelse(taxa$Genus_species %in% c("Chirostoma chapalae"), 
 #                      "extirpated in native locs, but translocated in P. Cointzio", taxa$Comment) # this translocation is only in the 83 subset, in the 67 subset the ocurrence of C. chapalae is native
 
+sum(taxa$Regional_Status=="Introduced") #17
+
 
 ## Add families: ---------------------------------------------------------------
+
+# NOTE:
+# "sp" except for Gila sp records removed below after addendum
+
 species <- taxa$Genus_species
-species <- species[! species %in% c("Poeciliopsis sp", "Poecilia sp", "Pseudoxiphophorus sp", 
-                                    "Astyanax sp", "Chirostoma sp", "Oreochromis sp", "Gila sp")]
+species <- species[! species %in% c("Gila sp")] 
 #fams <- tax_name(species, get = "family")
 #save(fams, file=paste0(path_list_SM, "/fams.RData"))
 load(paste0(path_list_SM, "/fams.RData"))
 taxa$Family <- fams$family[match(taxa$Genus_species, fams$query)]
-taxa$Family[taxa$Genus_species %in% c("Poeciliopsis sp", "Poecilia sp", "Pseudoxiphophorus sp", 
-                                      "Pseudoxiphophorus jonesii", "Pseudoxiphophorus bimaculatus")] <- "Poeciliidae"
-taxa$Family[taxa$Genus_species %in% c("Astyanax sp", "Astyanax aeneus")] <- "Characidae"
-taxa$Family[taxa$Genus_species %in% c("Oreochromis sp", "Amatitlania nigrofasciata",
-                                      "Amphilophus istlanus", "Herichthys cyanoguttatus", 
+taxa$Family[taxa$Genus_species %in% c("Pseudoxiphophorus jonesii", "Pseudoxiphophorus bimaculatus")] <- "Poeciliidae"
+taxa$Family[taxa$Genus_species %in% c("Astyanax aeneus")] <- "Characidae"
+taxa$Family[taxa$Genus_species %in% c("Amatitlania nigrofasciata",
+                                      "Amphilophus istlanus",
                                       "Mayaheros beani")] <- "Cichlidae"
 taxa$Family[taxa$Genus_species %in% c("Gila sp")] <- "Cyprinidae"
-taxa$Family[taxa$Genus_species %in% c("Chirostoma mezquital",
-                                      "Chirostoma sp")] <- "Atherinopsidae"
+taxa$Family[taxa$Genus_species %in% c("Chirostoma mezquital")] <- "Atherinopsidae"
 taxa$Family[taxa$Genus_species %in% c("Dajaus monticola")] <- "Mugilidae"
-taxa$Family[taxa$Genus_species %in% c("Neotoca bilineata", "Xenoophorus captivus", "Xenotoca variata")] <- "Goodeidae"
+taxa$Family[taxa$Genus_species %in% c("Neotoca bilineata", "Xenoophorus captivus", 
+                                      "Xenotoca variata", "Hubbsina turneri", "Skiffia bilineata")] <- "Goodeidae"
 taxa$Family[taxa$Genus_species %in% c("Aztecula sallaei", "Graodus boucardi")] <- "Leuciscidae"
 
 
@@ -369,17 +439,16 @@ taxa$Family[taxa$Genus_species %in% c("Aztecula sallaei", "Graodus boucardi")] <
 #save(ord, file=paste0(path_list_SM, "/ord.RData"))
 load(paste0(path_list_SM, "/ord.RData"))
 taxa$Order <- ord$order[match(taxa$Genus_species, ord$query)]
-taxa$Order[taxa$Genus_species %in% c("Poeciliopsis sp", "Poecilia sp", "Pseudoxiphophorus sp", 
-                                     "Pseudoxiphophorus jonesii", "Pseudoxiphophorus bimaculatus")] <- "Cyprinodontiformes"
-taxa$Order[taxa$Genus_species %in% c("Astyanax sp", "Astyanax aeneus")] <- "Characiformes"
-taxa$Order[taxa$Genus_species %in% c("Oreochromis sp", "Amatitlania nigrofasciata",
+taxa$Order[taxa$Genus_species %in% c("Pseudoxiphophorus jonesii", "Pseudoxiphophorus bimaculatus")] <- "Cyprinodontiformes"
+taxa$Order[taxa$Genus_species %in% c("Astyanax aeneus")] <- "Characiformes"
+taxa$Order[taxa$Genus_species %in% c("Amatitlania nigrofasciata",
                                      "Amphilophus istlanus", "Herichthys cyanoguttatus", 
                                      "Mayaheros beani")] <- "Cichliformes"
 taxa$Order[taxa$Genus_species %in% c("Gila sp")] <- "Cypriniformes"
-taxa$Order[taxa$Genus_species %in% c("Chirostoma mezquital",
-                                     "Chirostoma sp")] <- "Atheriniformes"
+taxa$Order[taxa$Genus_species %in% c("Chirostoma mezquital")] <- "Atheriniformes"
 taxa$Order[taxa$Genus_species %in% c("Dajaus monticola")] <- "Mugiliformes"
-taxa$Order[taxa$Genus_species %in% c("Neotoca bilineata", "Xenoophorus captivus", "Xenotoca variata")] <- "Cyprinodontiformes"
+taxa$Order[taxa$Genus_species %in% c("Neotoca bilineata", "Xenoophorus captivus", 
+                                     "Xenotoca variata", "Hubbsina turneri", "Skiffia bilineata")] <- "Cyprinodontiformes"
 taxa$Order[taxa$Genus_species %in% c("Aztecula sallaei", "Graodus boucardi")] <- "Cypriniformes"
 
 

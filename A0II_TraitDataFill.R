@@ -292,6 +292,22 @@ sapply(dt[,c(2:11)], function(x) sum(is.na(x))) # mostly PFs...
 (2+2+12+2)/(101*10)*100 # 1.78%
 
 
+
+#===============================================================================
+# Some sps treated effectively the same...--------------------------------------
+#===============================================================================
+# NOTE: this could cause issues in trait space..., so rm:
+
+unique(dt$Genus.species)
+dt <- dt[!dt$Genus.species %in% c("Astyanax sp", "Pseudoxiphophorus sp", 
+                                  "Chirostoma sp", "Oreochromis sp", 
+                                  "Poecilia sp", "Poeciliopsis sp"),] 
+101-6 # 95 OK
+#NOTE: rm all but Gila sp because they have the exact same traits as other sps.
+
+
+           
+
 #===============================================================================
 # Save data: -------------------------------------------------------------------
 #===============================================================================

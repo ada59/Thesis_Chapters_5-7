@@ -19,7 +19,6 @@
 "Perciformes","Cichlidae","Astatotilapia burtoni (Günther, 1894)","Haplochromis burtoni","yes","Introduced",NA
 "Characiformes","Characidae","Astyanax aeneus (Günther, 1860)","Astyanax aeneus","no","Native",NA
 "Characiformes","Characidae","Astyanax mexicanus (De Filippi, 1853)","Astyanax fasciatus","yes","Native",NA
-"Characiformes","Characidae","Astyanax Baird & Girard, 1854","Astyanax sp","no","Native",NA
 "Cyprinodontiformes","Goodeidae","Ataeniobius toweri (Meek, 1904)","Ataeniobius toweri","no","Native",NA
 "Atheriniformes","Atherinopsidae","Atherinella balsana (Meek, 1902)","Atherinella balsana","no","Native",NA
 "Cypriniformes","Leuciscidae","Aztecula sallaei (Günther, 1868)","Aztecula sallaei","no","Native",NA
@@ -37,7 +36,6 @@
 "Atheriniformes","Atherinopsidae","Chirostoma labarcae Meek, 1902","Menidia labarcae","yes","Native",NA
 "Atheriniformes","Atherinopsidae","Chirostoma mezquital Meek, 1904","Menidia mezquital","yes","Native",NA
 "Atheriniformes","Atherinopsidae","Chirostoma riojai Solórzano & López, 1966","Menidia riojai","yes","Native",NA
-"Atheriniformes","Atherinopsidae","Chirostoma Swainson, 1839","Menidia sp","yes","Native",NA
 "Cyprinodontiformes","Cyprinodontidae","Cyprinodon meeki Miller, 1976","Cyprinodon meeki","no","Native",NA
 "Cypriniformes","Cyprinidae","Cyprinus carpio Linnaeus, 1758","Cyprinus carpio","no","Introduced",NA
 "Mugiliformes","Mugilidae","Dajaus monticola (Bancroft, 1834)","Agonostomus monticola","yes","Native",NA
@@ -50,7 +48,7 @@
 "Cyprinodontiformes","Goodeidae","Goodea atripinnis Jordan, 1880","Goodea atripinnis","no","Native",NA
 "Perciformes","Cichlidae","Herichthys bartoni (Bean, 1892)","Cichlasoma bartoni","yes","Native",NA
 "Perciformes","Cichlidae","Herichthys labridens (Pellegrin, 1903)","Cichlasoma labridens","yes","Native",NA
-NA,NA,"Hubbsina turneri de Buen, 1940","Hubbsina turneri","no","Native",NA
+"Cyprinodontiformes","Goodeidae","Hubbsina turneri de Buen, 1940","Hubbsina turneri","no","Native",NA
 "Siluriformes","Ictaluridae","Ictalurus dugesii (Bean, 1880)","Ictalurus dugesii","no","Native",NA
 "Siluriformes","Ictaluridae","Ictalurus mexicanus (Meek, 1904)","Ictalurus mexicanus","no","Native",NA
 "Cyprinodontiformes","Goodeidae","Ilyodon furcidens (Jordan & Gilbert, 1882)","Ilyodon furcidens","no","Native",NA
@@ -65,27 +63,23 @@ NA,NA,"Hubbsina turneri de Buen, 1940","Hubbsina turneri","no","Native",NA
 "Perciformes","Cichlidae","Oreochromis aureus (Steindachner, 1864)","Oreochromis aureus","no","Introduced",NA
 "Perciformes","Cichlidae","Oreochromis mossambicus (Peters, 1852)","Oreochromis mossambicus","no","Introduced",NA
 "Perciformes","Cichlidae","Oreochromis niloticus (Linnaeus, 1758)","Oreochromis niloticus","no","Introduced",NA
-"Cichliformes","Cichlidae","Oreochromis Günther, 1889","Oreochromis sp","no","Introduced",NA
 "Cyprinodontiformes","Poeciliidae","Poecilia butleri Jordan, 1889","Poecilia butleri","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poecilia chica Miller, 1975","Poecilia chica","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poecilia mexicana Steindachner, 1863","Poecilia mexicana","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poecilia reticulata Peters, 1859","Poecilia reticulata","no","Introduced",NA
-"Cyprinodontiformes","Poeciliidae","Poecilia Bloch & Schneider 1801","Poecilia sp","no","Introduced",NA
 "Cyprinodontiformes","Poeciliidae","Poecilia sphenops Valenciennes, 1846","Poecilia sphenops","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis baenschi Meyer, Radda, Riehl & Feichtinger, 1986","Poeciliopsis baenschi","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis balsas Hubbs, 1926","Poeciliopsis balsas","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis gracilis (Heckel, 1848)","Poeciliopsis gracilis","no","Introduced",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis infans (Woolman, 1894)","Poeciliopsis infans","no","Native",NA
-"Cyprinodontiformes","Poeciliidae","Poeciliopsis Regan, 1913","Poeciliopsis sp","no","Introduced",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis turneri Miller, 1975","Poeciliopsis turneri","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis turrubarensis (Meek, 1912)","Poeciliopsis turrubarensis","no","Native",NA
 "Cyprinodontiformes","Poeciliidae","Poeciliopsis viriosa Miller, 1960","Poeciliopsis viriosa","no","Native",NA
 "Perciformes","Centrarchidae","Pomoxis nigromaculatus (Lesueur, 1829)","Pomoxis nigromaculatus","no","Introduced",NA
 "Cyprinodontiformes","Poeciliidae","Pseudoxiphophorus bimaculatus (Heckel, 1848)","Heterandria bimaculata","yes","Introduced",NA
 "Cyprinodontiformes","Poeciliidae","Pseudoxiphophorus jonesii (Günther, 1874)","Heterandria jonesii","yes","Introduced",NA
-"Cyprinodontiformes","Poeciliidae","Pseudoxiphophorus Bleeker, 1860","Heterandria sp","yes","Introduced",NA
 "Perciformes","Gobiidae","Sicydium multipunctatum Regan, 1906","Sicydium multipunctatum","no","Native",NA
-NA,NA,"Skiffia bilineata (Bean, 1887)","Skiffia bilineata","no","Native",NA
+"Cyprinodontiformes","Goodeidae","Skiffia bilineata (Bean, 1887)","Skiffia bilineata","no","Native",NA
 "Cyprinodontiformes","Goodeidae","Skiffia lermae Meek, 1902","Skiffia lermae","no","Native",NA
 "Cypriniformes","Leuciscidae","Tampichthys dichromus (Hubbs & Miller, 1977)","Dionda dichroma","yes","Native",NA
 "Cypriniformes","Leuciscidae","Tampichthys mandibularis (Contreras-Balderas & Verduzco-Martínez, 1977)","Dionda mandibularis","yes","Native",NA
