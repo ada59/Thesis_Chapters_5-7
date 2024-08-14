@@ -82,14 +82,17 @@ NDT53$ExoticsFound2005 <- gsub("Heterandria sp.", "H. bimaculata", NDT53$Exotics
 
 
 ## Replace Chirostoma sp: ------------------------------------------------------
-NDT67$HistoricalNatCatalog <- gsub("Menidia sp.", "M. riojai", NDT67$HistoricalNatCatalog)
-NDT53$HistoricalNatCatalog <- gsub("Menidia sp.", "M. riojai", NDT53$HistoricalNatCatalog)
 
-NDT67$HistoricalNatBroad <- gsub("Menidia sp.", "M. riojai", NDT67$HistoricalNatBroad)
-NDT53$HistoricalNatBroad <- gsub("Menidia sp.", "M. riojai", NDT53$HistoricalNatBroad)
+# Menidia sp. to M. riojai in rio Tilostoc (extirpated):
+NDT67$HistoricalNatCatalog[NDT67$SiteName=="rio Tilostoc"] <- gsub("Menidia sp.", "M. riojai", NDT67$HistoricalNatCatalog[NDT67$SiteName=="rio Tilostoc"])
+NDT67$HistoricalNatBroad[NDT67$SiteName=="rio Tilostoc"] <- gsub("Menidia sp.", "M. riojai", NDT67$HistoricalNatBroad[NDT67$SiteName=="rio Tilostoc"])
 
-NDT67$NativeFound2005 <- gsub("Menidia sp.", "M. riojai", NDT67$NativeFound2005)
-NDT53$NativeFound2005 <- gsub("Menidia sp.", "M. riojai", NDT53$NativeFound2005)
+NDT53$HistoricalNatCatalog[NDT53$SiteName=="rio Tilostoc"] <- gsub("Menidia sp.", "M. riojai", NDT53$HistoricalNatCatalog[NDT53$SiteName=="rio Tilostoc"])
+NDT53$HistoricalNatBroad[NDT53$SiteName=="rio Tilostoc"] <- gsub("Menidia sp.", "M. riojai", NDT53$HistoricalNatBroad[NDT53$SiteName=="rio Tilostoc"])
+
+# Menidia sp. to M. humboldtiana in lago de Zacapu (native remaining):
+NDT67$NativeFound2005[NDT67$SiteName=="lago de Zacapu"] <- gsub("Menidia sp.", "M. humboldtiana", NDT67$NativeFound2005[NDT67$SiteName=="lago de Zacapu"])
+NDT53$NativeFound2005[NDT53$SiteName=="lago de Zacapu"] <- gsub("Menidia sp.", "M. humboldtiana", NDT53$NativeFound2005[NDT53$SiteName=="lago de Zacapu"])
 
 
 

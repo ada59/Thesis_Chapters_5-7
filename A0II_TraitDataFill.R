@@ -216,7 +216,7 @@ Av7[Av7$Genus.species %like% "Oreochromis", c(7:15)] <- dt[dt$Genus.species == "
 # Oreochromis sp idem Oreochromis aureus
 
 Av7[Av7$Genus.species %like% "Chirostoma", c(7:15)] <- dt[dt$Genus.species == "Chirostoma riojai", c(7:15)]      
-# Chirostoma sp idem Chirostoma riojai
+# Chirostoma sp idem Chirostoma riojai (in one site, and to C. humboldtiana in another) [FIXED IN A0II_Community Data & downstream]
 
 Av7[Av7$Genus.species %like% "Pseudoxiphophorus", c(7:15)] <- dt[dt$Genus.species == "Pseudoxiphophorus bimaculatus", c(7:15)]      
 # Pseudoxiphophorus sp idem	Pseudoxiphophorus bimaculatus
