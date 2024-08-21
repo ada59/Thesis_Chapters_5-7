@@ -74,9 +74,9 @@ tt[,1] <- log(tt[,1])
 colnames(tt)[colnames(tt)=="MBl"] <- "logMBl" # needed for PCA
 C2 <- cor(tt) # Pearson
 
-file_path <- paste0(path_plots6, "/S4_PearsonCorrelationmatrix.png")
+file_path <- paste0(path_plots5, "/S4_PearsonCorrelationmatrix.png")
 png(width = 700, height = 700, file=file_path)
-corrplot(C2, method="number", type = "lower", order = "hclust", number.cex = 1.5, tl.cex = 1.5)
+corrplot(C2, method="number", type = "lower", order = "hclust", number.cex = 1.5, tl.cex = 1.5, diag = F)
 dev.off()
 
 
@@ -232,7 +232,7 @@ sum(tt$StatusSen=="Introduced")       # 17, OK
 ################################################################################
 
 
-## Classifying introduced species according to source:---------------------------
+## Classifying introduced species according to source:--------------------------
 # int (= exotic component)
 # Sources from Gesundheit & Macias Garcia, 2018.
 # Removed "sp" except for Gila after addendum!
@@ -326,14 +326,14 @@ save(tt2, file=paste0(path_traits, "/tt2.RData"))
 # Above: OLD, mFD has been updated. For all-continuous traits, now use: 
 # function tr.cont.fspace()
 
-fspace <- tr.cont.fspace(
-  sp_tr        = tt[, c(1:10)], 
-  pca          = TRUE, 
-  nb_dim       = 10, 
-  scaling      = "scale_center",
-  compute_corr = "pearson") # ok, identical to prcomp (qfsp performs PCoA, so not identical)
+#fspace <- tr.cont.fspace(
+#  sp_tr        = tt[, c(1:10)], 
+#  pca          = TRUE, 
+#  nb_dim       = 10, 
+#  scaling      = "scale_center",
+#  compute_corr = "pearson") # ok, identical to prcomp (qfsp performs PCoA, so not identical)
 #View(fspace$sp_faxes_coord)
-round(fspace$quality_metrics, 3)
+#round(fspace$quality_metrics, 3)
 
 
 
@@ -342,14 +342,17 @@ round(fspace$quality_metrics, 3)
 # PCA:--------------------------------------------------------------------------
 #===============================================================================
 rownames(tt) <- paste0(substr(rownames(tt), 1, 1), ".", str_split_fixed(rownames(tt), " ", 2)[,2])
-
+#rownames(tt)[rownames(tt)=="X.variata"] <- "X.var1"
+#rownames(tt)[rownames(tt)=="X.variatus"] <- "X.var2"
+#rownames(tt) <- substr(rownames(tt), start = 1, stop = 6) # rm after generating biplot for C5 since it affects other plots
 
 PCA <- prcomp(tt[,c(1:10)])
 coords <- PCA$x
 save(coords, file=paste0(path_traits,"/coords.RData"))
 
 
-(fviz_eig(PCA)) # Elbow between 2 & 3
+screeplot <- (fviz_eig(PCA)) # Elbow between 2 & 3
+ggsave(screeplot, filename = paste0(path_plots5, "/S4_PCAscreeplot.jpg"), width=6, height=4)
 
 
 
@@ -428,13 +431,15 @@ ggsave(vI, filename = paste0(path_plots5, "/S4_variables_1_2.jpg"), width=6, hei
 (bI <- fviz_pca_biplot(PCA, repel = TRUE,
                       title = "PCA-Biplot 1-2",
                       col.var = "contrib", # Variables color
-                      gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-                      col.ind = "#696969",  # Individuals color
-                      label = "var",
+                      gradient.cols = c("#00AFBB", "#DC9B32", "#E60202"),
+                      col.ind = "gray",  # Individuals color
+                      label = "all",
+                      labelsize = 3,
+                      arrowsize = 1.2,
                       addEllipses = TRUE,
                       ellipse.alpha = 0.1,
                       ellipse.type = "convex"
-))
+)+ theme_classic()) # changes aesthetics for chapter 5
 (bII <- fviz_pca_biplot(PCA,
                        title = "PCA-Biplot 3-4",
                        axes = c(3,4),
@@ -454,6 +459,7 @@ ggsave(vI, filename = paste0(path_plots5, "/S4_variables_1_2.jpg"), width=6, hei
                        legend="bottom",
                        align="hv",
                        font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+ggsave(bI, filename = paste0(path_plots5, "/S4_biplot1-2.jpg"), width=9, height=9)
 ggsave(panels_b, filename = paste0(path_plots5, "/S4_panels_biplots.jpg"), width=9, height=5)
 
 
@@ -469,11 +475,10 @@ round(PCA$rotation*100)
 (c1 <- fviz_contrib(PCA, choice = "var", axes = 1, top = 10)) 
 (c2 <- fviz_contrib(PCA, choice = "var", axes = 2, top = 10)) 
 (c3 <- fviz_contrib(PCA, choice = "var", axes = 3, top = 10))
-(c4 <- fviz_contrib(PCA, choice = "var", axes = 4, top = 10))
 
 
-contrib <- grid.arrange(c1, c2, c3, c4)
-ggsave(contrib, filename=paste0(path_plots5, "/S4_panels_contributionsDim1-4.jpg"), width=10, height = 8)
+contrib <- grid.arrange(c1, c2)
+ggsave(contrib, filename=paste0(path_plots5, "/S4_panels_contributionsDim1-2.jpg"), width=6, height = 6)
 ggsave(c1, filename = paste0(path_plots5, "/S4_contributions_1.jpg"), width=5, height=3)
 ggsave(c2, filename = paste0(path_plots5, "/S4_contributions_2.jpg"), width=5, height=3)
 
@@ -506,9 +511,9 @@ sum(is.na(tt$Family)) # 0
                     habillage = tt$Family, # color by groups
                     addEllipses = TRUE, # TRUE for concentration ellipses
                    ellipse.type = "convex"
-))
+)+ theme_classic())
 (iF34 <- fviz_pca_ind(PCA,
-                    title = "Individuals-PCA 1-2 (by Family)",
+                    title = "Individuals-PCA 3-4 (by Family)",
                     axes = c(3,4),
                     label = "none", 
                     habillage = tt$Family, 

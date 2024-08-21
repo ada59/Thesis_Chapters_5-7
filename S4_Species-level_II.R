@@ -197,9 +197,9 @@ length(unique(Dii_v2$Species))                        # 94
 setdiff(unique(colnames(dt)), unique(Dii_v2$Species)) # Gambusia yucatana
 
 Dii_v2$SourceII[Dii_v2$SourceII=="E"] <-"LE"          # locally extirpated
-Dii_v2$SourceII[Dii_v2$SourceII=="NR"] <-"L_RN"       # locally remaining
+Dii_v2$SourceII[Dii_v2$SourceII=="NR"] <-"L_NR"       # locally remaining
 table(Dii_v2$SourceII)
-# IA   IB L_RN   LE 
+# IA   IB L_NR   LE 
 # 36   36  255  188 
 
 save(Dii_v2, file="Dii_v2.RData")
@@ -394,7 +394,7 @@ save(global_distinctivenness_violin2, file="global_distinctivenness_violin2.RDat
 
 ## Local distinctiveness -------------------------------------------------------
 Dii_v2$SourceII <- as.factor(Dii_v2$SourceII)
-Dii_v2$SourceII <- factor(Dii_v2$SourceII, levels = c("LE", "IA", "IB", "L_RN")) 
+Dii_v2$SourceII <- factor(Dii_v2$SourceII, levels = c("LE", "IA", "IB", "L_NR")) 
 local_distinctivenness_violin2 <- ggplot(Dii_v2, aes(x = SourceII, y = Di, fill=SourceII)) +
   geom_point(alpha=0.3)+
   geom_violin(alpha=0.4) +
@@ -420,7 +420,7 @@ load("trait_space_12_status.RData") # mainc6
 load("trait_space_12_status_biplot.RData") # main_biplotc6
 
 
-(panels_species_level <- ggarrange(main_biplotc6,
+(panels_species_level <- ggarrange(main_c6,
                                    uniqueness_violin2,
                                    global_distinctivenness_violin2,
                                    local_distinctivenness_violin2,
@@ -429,7 +429,17 @@ load("trait_space_12_status_biplot.RData") # main_biplotc6
                                    labels = c("A)", "B)", "C)", "D)"),
                                    align="hv",
                                    font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
+(panels_species_level_legend <- ggarrange(main_c6,
+                                   uniqueness_violin2,
+                                   global_distinctivenness_violin2,
+                                   local_distinctivenness_violin2,
+                                   common.legend = F, # FALSE (Then panels_speciesII)
+                                   legend="bottom",
+                                   labels = c("A)", "B)", "C)", "D)"),
+                                   align="hv",
+                                   font.label = list(size = 10, color = "black", face = "bold", family = NULL, position = "top")))
 ggsave(panels_species_level, filename= paste0(path_plots6, "/S4_Figure_SpeciesLevel.jpg"), width = 8, height = 8) # True common legend
+ggsave(panels_species_level_legend, filename= paste0(path_plots6, "/S4_Figure_SpeciesLevel_ForLegend.jpg"), width = 8, height = 8) # False common legend
 
 
 
@@ -535,7 +545,7 @@ Di_dim2p <- ggplot(Di_dim2, aes(x=SourceII, y=Distinctiveness, fill=SourceII, co
 Di_dim2p 
 
 
-ggsave(Ui_dimp, filename= paste0(path_plots6, "s/S4_UniquenessDimensions.jpg"), width = 10, height = 8) 
+ggsave(Ui_dimp, filename= paste0(path_plots6, "/S4_UniquenessDimensions.jpg"), width = 10, height = 8) 
 ggsave(Dig_dimp, filename= paste0(path_plots6, "/S4_GlobalDisDimensions.jpg"), width = 10, height = 8)
 ggsave(Di_dim2p, filename= paste0(path_plots6, "/S4_LocalDisDimensions.jpg"), width = 10, height = 8) 
 

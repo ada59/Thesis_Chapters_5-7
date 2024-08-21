@@ -374,14 +374,18 @@ iNEXT53plot <- lapply(iNEXT53, function(x) {x[["TDiNextEst"]][["size_based"]]})
 iNEXT53plot <-Map(cbind, iNEXT53plot, "Period"=names(iNEXT53plot))
 iNEXT53plot <- as.data.frame(do.call(rbind, iNEXT53plot))
 iNEXT53plot$Period <- factor(iNEXT53plot$Period, levels = c("HNC", "HNB" , "ContAll"),
-                             labels = c("a) Historical Conservative", "b) Historical Broad", "c) Contemporary Natives + Exotics"))
+                             labels = c("a) Historical Conservative Survey", 
+                                        "b) Historical Broad Survey", 
+                                        "c) Contemporary Survey"))
 
 
 iNEXT67plot <- lapply(iNEXT67, function(x) {x[["TDiNextEst"]][["size_based"]]})
 iNEXT67plot <- Map(cbind, iNEXT67plot, "Period"=names(iNEXT67plot))
 iNEXT67plot <- as.data.frame(do.call(rbind, iNEXT67plot))
 iNEXT67plot$Period <- factor(iNEXT67plot$Period, levels = c("HNC", "HNB" , "ContAll"),
-                             labels = c("a) Historical Conservative", "b) Historical Broad", "c) Contemporary Natives + Exotics"))
+                             labels = c("a) Historical Conservative Survey", 
+                                        "b) Historical Broad Survey", 
+                                        "c) Contemporary Survey"))
 
 
 size_vs_coverage <- function(dt_plot){
@@ -391,7 +395,7 @@ size_vs_coverage <- function(dt_plot){
   dt_plot_e <- subset(dt_plot, dt_plot$Method=="Extrapolation")
   
    p <- ggplot(data=dt_plot, aes(x=mT, y=SC, color=Period)) +
-    labs(y="sample coverage", x="size")+
+    labs(y="Sample coverage", x="Number of sites")+
    geom_point(data=dt_plot_ref, aes(x=mT, y=SC))+
    geom_line(data=dt_plot_r, aes(x=mT, y=SC), linetype="solid", alpha=0.4)+
    geom_line(data=dt_plot_e, aes(x=mT, y=SC), linetype="dotdash")+
@@ -401,8 +405,8 @@ size_vs_coverage <- function(dt_plot){
       breaks = c(0, 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1),
       limits = c(0, 1)) +
    geom_hline(yintercept=0.8, linetype=2, color = "black")+
-   scale_color_manual(values=c("#F0E442","#E69F00","#0072B2"))+
-   scale_fill_manual(values=c("#F0E442","#E69F00","#0072B2"))+
+   scale_color_manual(values=c("#D55E00","#E69F00","#0072B2"))+
+   scale_fill_manual(values=c("#D55E00","#E69F00","#0072B2"))+
     theme(legend.position = "none",
           axis.title.x = element_text(size = 14),
           axis.title.y = element_text(size = 14),
@@ -427,14 +431,14 @@ diversity_vs_size <- function(dt_plot) {
   dt_plot_e <- subset(dt_plot, dt_plot$Method=="Extrapolation")
   
   p <- ggplot(data=dt_plot, aes(x=mT, y=qTD, color=Period)) +
-    labs(y="species richness", x="size")+
+    labs(y="Species richness", x="Number of sites")+
     geom_point(data=dt_plot_ref, aes(x=mT, y=qTD, color=Period))+
     geom_line(data=dt_plot_r, aes(x=mT, y=qTD, color=Period), linetype="solid", alpha=0.4)+
     geom_line(data=dt_plot_e, aes(x=mT, y=qTD, color=Period), linetype="dotdash")+
     geom_ribbon(data =  dt_plot, aes(x=mT, y=qTD, ymin = qTD.LCL, ymax = qTD.UCL, fill=Period), alpha = 0.1)+
     theme_classic()+
-    scale_color_manual(values=c("#F0E442","#E69F00","#0072B2"))+
-    scale_fill_manual(values=c("#F0E442","#E69F00","#0072B2"))+
+    scale_color_manual(values=c("#D55E00","#E69F00","#0072B2"))+
+    scale_fill_manual(values=c("#D55E00","#E69F00","#0072B2"))+
     theme(legend.position = "none",
           axis.title.x = element_text(size = 14),
           axis.title.y = element_text(size = 14),
