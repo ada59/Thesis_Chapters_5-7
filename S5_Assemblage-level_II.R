@@ -174,42 +174,42 @@ div3 <- div3[!div3$Period=="ContE",]   # rm Cont E from rawdata
 div3$Period <- recode_factor(div3$Period, 
                              HNC = "Historical Conservative", 
                              HNB = "Historical Broad",
-                             ContN = "Contemporary Natives",
-                             ContAll = "Contemporary Natives + Exotics")
+                             ContN = "Contemporary Native",
+                             ContAll = "Contemporary Native + Introduced")
 div3$Period <- factor(div3$Period, levels = c("Historical Conservative",
                                               "Historical Broad",
-                                              "Contemporary Natives", 
-                                              "Contemporary Natives + Exotics"))
+                                              "Contemporary Native", 
+                                              "Contemporary Native + Introduced"))
 unique(pred_redundancy$Period)
 str(pred_redundancy)
 
 #### Historical Conservative ####
 (p1nullF0_hnc <- nullF0 + 
     geom_point(data = div3[div3$Period=="Historical Conservative",], 
-               aes(x=T0, y=F0), size=2, alpha=1, col="#D55E00")+
-    geom_line(data = pred_redundancy[pred_redundancy$Period=="Historical Conservative",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#D55E00")+
+               aes(x=T0, y=F0), size=2, alpha=1, col="#28E2E5")+
+    geom_line(data = pred_redundancy[pred_redundancy$Period=="Historical Conservative",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#28E2E5")+
     geom_ribbon(data = pred_redundancy[pred_redundancy$Period=="Historical Conservative",], aes(x = T0, y=fit, ymin = lwr, ymax = upr), alpha=0.03))
 
 #### Historical Broad ####
 (p1nullF0_hnb <- nullF0 + 
     geom_point(data = div3[div3$Period=="Historical Broad",], 
-               aes(x=T0, y=F0), size=2, alpha=1, col="#E69F00")+
-    geom_line(data = pred_redundancy[pred_redundancy$Period=="Historical Broad",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#E69F00")+
+               aes(x=T0, y=F0), size=2, alpha=1, col="#61D04F")+
+    geom_line(data = pred_redundancy[pred_redundancy$Period=="Historical Broad",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#61D04F")+
     geom_ribbon(data = pred_redundancy[pred_redundancy$Period=="Historical Broad",], aes(x = T0, y=fit, ymin = lwr, ymax = upr), alpha=0.03))
 
-#### Contemporary Natives ####
+#### Contemporary Native ####
 (p1nullF0_contN <- nullF0II + 
-   geom_point(data = div3[div3$Period=="Contemporary Natives",], 
-              aes(x=T0, y=F0), size=2, alpha=1, col="#009E73")+
-   geom_line(data = pred_redundancy[pred_redundancy$Period=="Contemporary Natives",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#009E73")+
-   geom_ribbon(data = pred_redundancy[pred_redundancy$Period=="Contemporary Natives",], aes(x = T0, y=fit, ymin = lwr, ymax = upr), alpha=0.03))
+   geom_point(data = div3[div3$Period=="Contemporary Native",], 
+              aes(x=T0, y=F0), size=2, alpha=1, col="#F5C710")+
+   geom_line(data = pred_redundancy[pred_redundancy$Period=="Contemporary Native",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#F5C710")+
+   geom_ribbon(data = pred_redundancy[pred_redundancy$Period=="Contemporary Native",], aes(x = T0, y=fit, ymin = lwr, ymax = upr), alpha=0.03))
 
-#### Contemporary Natives + Exotics #### "#0072B2"
+#### Contemporary Native + Introduced #### 
 (p1nullF0_contAll <- nullF0II + 
-    geom_point(data = div3[div3$Period=="Contemporary Natives + Exotics",], 
-               aes(x=T0, y=F0), size=2, alpha=1, col="#0072B2")+
-    geom_line(data = pred_redundancy[pred_redundancy$Period=="Contemporary Natives + Exotics",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#0072B2")+
-    geom_ribbon(data = pred_redundancy[pred_redundancy$Period=="Contemporary Natives + Exotics",], aes(x = T0, y=fit, ymin = lwr, ymax = upr), alpha=0.03))
+    geom_point(data = div3[div3$Period=="Contemporary Native + Introduced",], 
+               aes(x=T0, y=F0), size=2, alpha=1, col="#CD0BBC")+
+    geom_line(data = pred_redundancy[pred_redundancy$Period=="Contemporary Native + Introduced",], aes(x = T0, y = fit), linetype = 1, size = 1, col="#CD0BBC")+
+    geom_ribbon(data = pred_redundancy[pred_redundancy$Period=="Contemporary Native + Introduced",], aes(x = T0, y=fit, ymin = lwr, ymax = upr), alpha=0.03))
 
 
 ggsave(p1nullF0_hnc, file= paste0(path_plots6, "/Null-ObservedHNC.jpg"), width = 8, height = 6) 
@@ -246,60 +246,60 @@ ses_resultsF0 <- c(as_v(ses_results_hnc),as_v(ses_results_hnb),
                    as_v(ses_results_cn),as_v(ses_results_call))
 
 
-period <- rep(c("Historical Conservative", "Historical Broad", "Contemporary Natives", "Contemporary Natives + Exotics"), times=c(48,60,33,49))
+period <- rep(c("Historical Conservative", "Historical Broad", "Contemporary Native", "Contemporary Native + Introduced"), times=c(48,60,33,49))
 ses_dt <- data.frame("Period"=period, "SESF0"=ses_resultsF0)
 ses_dt <- ses_dt[!is.na(ses_dt$SESF0),]
-
-ses_dt %>% group_by(Period) %>% summarise(count = n(),
-                                          countsAbv = sum(SESF0 > 0, na.rm = TRUE),
-                                          countsUnd = sum(SESF0 < 0, na.rm = TRUE),
-                                          countsAbvPer = (sum(SESF0 > 0, na.rm = TRUE)/count)*100,
-                                          countsUndPer = (sum(SESF0 < 0, na.rm = TRUE)/count)*100)
+str(ses_dt)
+#ses_dt %>% group_by(Period) %>% summarise(count = n(),
+#                                          countsAbv = sum(SESF0 > 0, na.rm = TRUE),
+#                                          countsUnd = sum(SESF0 < 0, na.rm = TRUE),
+#                                          countsAbvPer = (sum(SESF0 > 0, na.rm = TRUE)/count)*100,
+#                                          countsUndPer = (sum(SESF0 < 0, na.rm = TRUE)/count)*100)
 
 summF0 <- summarySE(ses_dt, measurevar=c("SESF0"), groupvars=c("Period"), na.rm = TRUE)
 summF0$Period <- recode_factor(summF0$Period,
-                               "Historical Conservative"="HNC",
-                               "Historical Broad"="HNB",
-                               "Contemporary Natives"="CN",
-                               "Contemporary Natives + Exotics"="CN+E")
+                               "Historical Conservative"="HC",
+                               "Historical Broad"="HB",
+                               "Contemporary Native"="CN",
+                               "Contemporary Native + Introduced"="CN+I")
 ses_dt$Period <- recode_factor(ses_dt$Period,
-                               "Historical Conservative"="HNC",
-                               "Historical Broad"="HNB",
-                               "Contemporary Natives"="CN",
-                               "Contemporary Natives + Exotics"="CN+E")
+                               "Historical Conservative"="HC",
+                               "Historical Broad"="HB",
+                               "Contemporary Native"="CN",
+                               "Contemporary Native + Introduced"="CN+I")
 
-colorBlind4   <- c("#D55E00", "#E69F00", "#009E73","#0072B2")
-colorBlind3   <- c("#E69F00", "#009E73","#0072B2")
+colorBlind4   <- c("#28E2E5", "#61D04F", "#F5C710", "#CD0BBC")
+colorBlind3   <- c("#61D04F", "#F5C710", "#CD0BBC")
 
-(summF0hnc <- ggplot(ses_dt[ses_dt$Period=="HNC",], 
+(summF0hnc <- ggplot(ses_dt[ses_dt$Period=="HC",], 
                      aes(x=Period, y=SESF0, colour=Period)) +
-    geom_point(alpha=0.4, col="#D55E00") +
-    geom_violin(alpha=0.1, col="#D55E00", fill="#D55E00") +
+    geom_point(alpha=0.4, col="#28E2E5") +
+    geom_violin(alpha=0.1, col="#28E2E5", fill="#28E2E5") +
     #geom_boxplot(width=0.1, alpha=0.5) +
-    geom_point(data=summF0[summF0$Period=="HNC",], 
-               aes(x=Period, y=SESF0), size=2.5, col="#D55E00") +
-    geom_errorbar(data=summF0[summF0$Period=="HNC",],
+    geom_point(data=summF0[summF0$Period=="HC",], 
+               aes(x=Period, y=SESF0), size=2.5, col="#28E2E5") +
+    geom_errorbar(data=summF0[summF0$Period=="HC",],
                   aes(ymin=SESF0-ci, ymax=SESF0+ci),
-                  width=0.2, col="#D55E00")+
+                  width=0.2, col="#28E2E5")+
     theme_bw()+
     theme(legend.position = "none")+
     labs(y="SES", x="")+
     geom_hline(yintercept = 0, linetype="dashed"))
 
-(summF03p <- ggplot(ses_dt[!ses_dt$Period=="HNC",],
+(summF03p <- ggplot(ses_dt[!ses_dt$Period=="HC",],
                     aes(x=Period, y=SESF0, colour=Period)) + 
     geom_point(alpha=0.5) +
     geom_violin(alpha=0.1, aes(fill=Period)) +
-    geom_point(data=summF0[!summF0$Period=="HNC",], 
+    geom_point(data=summF0[!summF0$Period=="HC",], 
                aes(x=Period, y=SESF0, colour=Period), size=2.5)+
-    geom_errorbar(data=summF0[!summF0$Period=="HNC",], aes(ymin=SESF0-ci, ymax=SESF0+ci),
+    geom_errorbar(data=summF0[!summF0$Period=="HC",], aes(ymin=SESF0-ci, ymax=SESF0+ci),
                   width=0.2)+
     theme_bw()+
     theme(legend.position = "bottom")+
-    scale_color_manual(values=colorBlind3, labels=c("HNB (n=60)", "CN (n=33)", "CN+E(n=49)"))+
-    scale_fill_manual(values=colorBlind3, labels=c("HNB (n=60)", "CN (n=33)", "CN+E(n=49)"))+
+    scale_color_manual(values=colorBlind3, labels=c("HB (n=60)", "CN (n=33)", "CN+I (n=49)"))+
+    scale_fill_manual(values=colorBlind3, labels=c("HB (n=60)", "CN (n=33)", "CN+I (n=49)"))+
     labs(y="SES", x="Period")+
-    geom_hline(yintercept = 0, linetype="dashed")) # Same plot for redundancy.
+    geom_hline(yintercept = 0, linetype="dashed")) 
 
 ggsave(summF0hnc, file= paste0(path_plots6, "/SES_F0hnc.jpg"), width = 3, height = 4) 
 ggsave(summF03p, file= paste0(path_plots6, "/SES_F03.jpg"), width = 6, height = 4)
@@ -308,7 +308,7 @@ ggsave(summF03p, file= paste0(path_plots6, "/SES_F03.jpg"), width = 6, height = 
 
 
 #===============================================================================
-# T-test, diffferent frm 0?-----------------------------------------------------
+# T-test, different from 0?-----------------------------------------------------
 #===============================================================================
 ses_dt_n <- ses_dt %>%
   group_by(Period) %>%
@@ -325,7 +325,7 @@ ses_dtF0$res  # same p-vals when assessing redundancy
 #===============================================================================
 # Quantile scores:--------------------------------------------------------------
 #===============================================================================
-divrank <- div3[,-c(5)]
+divrank <- div3[,-c(5)] # rm redundancy
 divrank <- split(divrank, f=divrank$T0)
 vrank <- names(divrank)
 nrows <- lapply(divrank, function(x) {nrow(x)})
@@ -346,10 +346,10 @@ for (i in 1:nrow(mat.rank.all)){
 l <- do.call(rbind, l)
 l <- data.frame(mat.rank.all[,c(1:4)], l) 
 l$Period <- recode_factor(l$Period, 
-                          "Historical Conservative"="HNC",
-                          "Historical Broad"="HNB",
-                          "Contemporary Natives"="CN",
-                          "Contemporary Natives + Exotics"="CN+E")
+                          "Historical Conservative"="HC",
+                          "Historical Broad"="HB",
+                          "Contemporary Native"="CN",
+                          "Contemporary Native + Introduced"="CN+I")
 lSigN <- l[l$pvals<0.025,]
 lSigP <- l[l$pvals>0.975,]
 
@@ -361,8 +361,8 @@ lSigP <- l[l$pvals>0.975,]
     scale_color_manual(values=colorBlind4)+
     scale_fill_manual(values=colorBlind4)+
     theme(legend.position = "none")+
-    geom_hline(yintercept = 0.025, linetype="dashed", color="red", alpha=0.5)+
-    geom_hline(yintercept = 0.975, linetype="dashed", color="red", alpha=0.5)+
+    #geom_hline(yintercept = 0.025, linetype="dashed", color="red", alpha=0.5)+
+    #geom_hline(yintercept = 0.975, linetype="dashed", color="red", alpha=0.5)+
     geom_hline(yintercept = 0.75, linetype="dashed", color="lightgray")+
     geom_hline(yintercept = 0.25, linetype="dashed", color="lightgray")+
     geom_hline(yintercept = 0.5, linetype="dashed", color="lightgray"))

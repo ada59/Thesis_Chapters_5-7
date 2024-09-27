@@ -278,6 +278,30 @@ ggsave(MexicoMapZoomB, file= paste0(plot_dir, "/Chapter5/MexicoMapZoomB.jpg"), w
 9/67*100
 24/67*100
 6/67*100
+
+
+
+## Basin-scale Figure: ---------------------------------------------------------
+length(unique(df$Basin))
+c19 <- c(
+  "dodgerblue2", "#E31A1C", # red
+  "green4",
+  "#6A3D9A", # purple
+  "#FF7F00", # orange
+  "black", "gold1",
+  "skyblue2", "#FB9A99", # lt pink
+  "palegreen2",
+  "#CAB2D6", # lt purple
+  "#FDBF6F", # lt orange
+  "orchid1", "deeppink1", "blue1", "steelblue4",
+  "darkturquoise", "yellow4", "brown"
+) # from https://stackoverflow.com/questions/9563711/r-color-palettes-for-many-data-classes
+(g1C<-g1+geom_point(data = df,  # Add and plot site data
+                   aes(x = Longitude, y = Latitude, fill = Basin), shape=21, size=5, alpha=0.9)+
+    scale_fill_manual(values=c19))
+
+ggsave(g1C, file= paste0(plot_dir, "/Chapter5/MexicoMapBasins.jpg"), width = 12, height = 8)
+
 ```
 <p>&nbsp;</p>
 #### **Richness: **
@@ -405,8 +429,8 @@ size_vs_coverage <- function(dt_plot){
       breaks = c(0, 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1),
       limits = c(0, 1)) +
    geom_hline(yintercept=0.8, linetype=2, color = "black")+
-   scale_color_manual(values=c("#D55E00","#E69F00","#0072B2"))+
-   scale_fill_manual(values=c("#D55E00","#E69F00","#0072B2"))+
+   scale_color_manual(values=c("#28E2E5", "#61D04F","#CD0BBC"))+
+   scale_fill_manual(values=c("#28E2E5", "#61D04F","#CD0BBC"))+
     theme(legend.position = "none",
           axis.title.x = element_text(size = 14),
           axis.title.y = element_text(size = 14),
@@ -437,8 +461,8 @@ diversity_vs_size <- function(dt_plot) {
     geom_line(data=dt_plot_e, aes(x=mT, y=qTD, color=Period), linetype="dotdash")+
     geom_ribbon(data =  dt_plot, aes(x=mT, y=qTD, ymin = qTD.LCL, ymax = qTD.UCL, fill=Period), alpha = 0.1)+
     theme_classic()+
-    scale_color_manual(values=c("#D55E00","#E69F00","#0072B2"))+
-    scale_fill_manual(values=c("#D55E00","#E69F00","#0072B2"))+
+    scale_color_manual(values=c("#28E2E5", "#61D04F","#CD0BBC"))+
+    scale_fill_manual(values=c("#28E2E5", "#61D04F","#CD0BBC"))+
     theme(legend.position = "none",
           axis.title.x = element_text(size = 14),
           axis.title.y = element_text(size = 14),

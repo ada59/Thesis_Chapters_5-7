@@ -348,6 +348,7 @@ rownames(tt) <- paste0(substr(rownames(tt), 1, 1), ".", str_split_fixed(rownames
 
 PCA <- prcomp(tt[,c(1:10)])
 coords <- PCA$x
+save(PCA, file=paste0(path_traits,"/PCA.RData"))
 save(coords, file=paste0(path_traits,"/coords.RData"))
 
 
@@ -486,6 +487,7 @@ ggsave(c2, filename = paste0(path_plots5, "/S4_contributions_2.jpg"), width=5, h
 ## Variables & inviduals results: ----------------------------------------------
 PCAv <- get_pca_var(PCA) # variable results
 PCAv$coord               # coordinates
+PCAv$cor                 # correlation
 PCAv$contrib             # contributions to the PCs
 PCAv$cos2                # quality of representation 
 

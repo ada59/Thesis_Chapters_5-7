@@ -106,6 +106,11 @@ div$Period <- as.factor(div$Period)
 div$R0 <- div$T0-div$F0 # trait redundancy
 
 
+save(lassemb, file="lassemb.RData")                       # used in other CM Chapter
+save(divT0, file=paste0(path_traits, "/divT0.RData"))     # used in other CM Chapter
+save(divF0, file=paste0(path_traits, "/divF0.RData"))     # used in other CM Chapter
+
+
 
 
 #===============================================================================
@@ -225,7 +230,7 @@ hnb3[c(17,33),] # Sites with higher richness.
 
 #### Contemporary Native ####
 summlinear3[[3]]
-plot(F0 ~ T0, data=hnb3, main="Contemporary natives")
+plot(F0 ~ T0, data=hnb3, main="Contemporary Native")
 curve(predict(fit_linear_lm_3[[3]], newdata = data.frame(T0 = x)), col = "green", lty=1, add = TRUE)
 par(mfrow=c(2,2))
 plot(fit_linear_lm_3[[3]])
@@ -235,9 +240,9 @@ plot(cooks.distance(fit_linear_lm_3[[3]])) # Index 16 (assemblage with 17 sps)
 contN3[c(19,32),] # Sites with relatively higher richness.
 
 
-#### Contemporary Native + Exotics ####
+#### Contemporary Native + Introduced ####
 summlinear3[[4]]
-plot(F0 ~ T0, data=hnb3, main="Contemporary natives + exotics")
+plot(F0 ~ T0, data=hnb3, main="Contemporary Native + Introduced")
 curve(predict(fit_linear_lm_3[[4]], newdata = data.frame(T0 = x)), col = "green", lty=1, add = TRUE)
 par(mfrow=c(2,2))
 plot(fit_linear_lm_3[[4]])
@@ -283,7 +288,7 @@ summlinear3[[4]] # idem estimates
 ## power regression with lm: ---------------------------------------------------
 lapply(l3, function(x) {range(x$F0)}) # No need to do log + 1
 
-fit_power_lm_3 <- lapply(l3, function(x) {lm(log(F0) ~ log(T0), data=x)})
+fit_power_lm_3 <- lapply(l3, function(x) {lm(log(F0) ~ log(T0), data=x)}) #log(F0 + 1) is keeping 1s
 summloglog3 <- lapply(fit_power_lm_3, function(x) {summary(x)})
 
 
@@ -313,11 +318,15 @@ legend("bottomright", legend = c("Log-Log", "Nls"),
 par(mfrow=c(2,2))
 plot(fit_power_nls_hnc_3) 
 dev.off()
-plot(predict(fit_power_nls_hnc_3), resid(fit_power_nls_hnc_3), xlab="Fitted values", ylab="Residuals")
-abline(h=0)
-qqnorm(resid(fit_power_nls_hnc_3)/sd(resid(fit_power_nls_hnc_3)))
-abline(0,1) #OK (the power model seems good)
 
+file_path <- paste0(path_plots6, "/S5_AssumptionsHNC.png") # Assumptions HNC
+png(width = 600, height = 300, file=file_path)
+par(mfrow=c(1,2))
+qqnorm(resid(fit_power_nls_hnc_3)/sd(resid(fit_power_nls_hnc_3)))
+abline(0,1) 
+plot(predict(fit_power_nls_hnc_3), resid(fit_power_nls_hnc_3), xlab="Fitted values", ylab="Residuals", main="Residuals vs Fitted")
+abline(h=0)
+dev.off()
 
 
 #### Historical Broad ####
@@ -356,7 +365,7 @@ abline(0,1) #OK (less good than in the historical period)
 
 
 
-#### Contemporary Native + Exotics ####
+#### Contemporary Native + Introduced ####
 plot(F0 ~ T0, data=contAll3)
 curve(exp(predict(fit_power_lm_3[[4]], newdata = data.frame(T0 = x))), col = "black", lty=2, add = TRUE)
 curve(predict(fit_power_nls_contAll_3, newdata = data.frame(T0 = x)), col = "red", lty=3, add = TRUE)
@@ -420,7 +429,7 @@ fit4_contN3 <- nls(F0~k*(1-exp((-1)*b*T0)), data=contN3, start=list(k=my.k,b=my.
 lines(x, predict(fit4_contN3,newdata=data.frame(T0=x)),lwd=2,col='blue') # plot the model
 summary(fit4_contN3) # Parameters seem to be in the correct range.
 
-#### Contemporary Native + Exotics ####
+#### Contemporary Native + Introduced ####
 plot(F0 ~ T0, data=contAll3)
 x=c(2:9)
 my.k <- 3  # parameter for model
@@ -439,21 +448,35 @@ abline(h=0)
 qqnorm(resid(fit4_hnc3)/sd(resid(fit4_hnc3)))
 abline(0,1) # pretty good
 
-plot(predict(fit4_hnb3), resid(fit4_hnb3), xlab="Fitted values", ylab="Residuals")
-abline(h=0)
-qqnorm(resid(fit4_hnb3)/sd(resid(fit4_hnb3)))
-abline(0,1) # not that good
 
-plot(predict(fit4_contN3), resid(fit4_contN3), xlab="Fitted values", ylab="Residuals")
-abline(h=0)
+file_path <- paste0(path_plots6, "/S5_AssumptionsHNB.png")
+png(width = 600, height = 300, file=file_path)
+par(mfrow=c(1,2))
+qqnorm(resid(fit4_hnb3)/sd(resid(fit4_hnb3)))
+abline(0,1) 
+plot(predict(fit4_hnb3), resid(fit4_hnb3), xlab="Fitted values", ylab="Residuals", main="Residuals vs Fitted")
+abline(h=0) # passable
+dev.off()
+
+
+file_path <- paste0(path_plots6, "/S5_AssumptionsContN.png")
+png(width = 600, height = 300, file=file_path)
+par(mfrow=c(1,2))
 qqnorm(resid(fit4_contN3)/sd(resid(fit4_contN3)))
 abline(0,1) # not great
+plot(predict(fit4_contN3), resid(fit4_contN3), xlab="Fitted values", ylab="Residuals", main="Residuals vs Fitted")
+abline(h=0) # not great...
+dev.off()
 
-plot(predict(fit4_contAll3), resid(fit4_contAll3), xlab="Fitted values", ylab="Residuals")
-abline(h=0) # At low & high values we observe all dots under 0
+
+file_path <- paste0(path_plots6, "/S5_AssumptionsContAll.png")
+png(width = 600, height = 300, file=file_path)
+par(mfrow=c(1,2))
 qqnorm(resid(fit4_contAll3)/sd(resid(fit4_contAll3)))
 abline(0,1) #OK (not great) /  over-predicting?
-
+plot(predict(fit4_contAll3), resid(fit4_contAll3), xlab="Fitted values", ylab="Residuals", main="Residuals vs Fitted")
+abline(h=0) # At low & high values we observe all dots under 0
+dev.off()
 
 
 
@@ -486,7 +509,7 @@ plot(F0 ~ T0, data=contN3)
 #fit5_contN <- nls(F0~(a/(1+b*exp(-c*T0))) -(a/(1+b)), data=contN3, start=list(a=my.a,b=my.b, c=my.c))
 fit5_contN <- nls(F0 ~ SSlogis(T0, Asym, xmid, scal), data = contN3)
 
-#### Contemporary Native + Exotics ####
+#### Contemporary Native + Introduced ####
 plot(F0 ~ T0, data=contAll3) 
 #fit5_contAll <- nls(F0~(a/(1+b*exp(-c*T0))) -(a/(1+b)), data=contAll3, start=list(a=my.a,b=my.b, c=my.c))
 fit5_contAll <- nls(F0 ~ SSlogis(T0, Asym, xmid, scal), data = contAll3)
@@ -553,7 +576,7 @@ list_nls_hnc <- list("Linear"=fit_linear_nls_hnc_3,  # Linear
                      "Sigmoidal"=fit5_hnc)           # Sigmoidal
 hnc_comp <- fun_comp(list_nls_hnc)
 hnc_comp$Period <- "Historical Conservative"
-##### NOTE: POWER.
+##### NOTE: POWER. // ASYMPTOTE if considering 1s
 
 
 #### Historical Broad ####
@@ -563,27 +586,27 @@ list_nls_hnb <- list("Linear"=fit_linear_nls_hnb_3,
                      "Sigmoidal"=fit5_hnb)
 hnb_comp <- fun_comp(list_nls_hnb)
 hnb_comp$Period <- "Historical Broad"
-##### NOTE: ASYMPTOTE.
+##### NOTE: ASYMPTOTE. // ASYMPTOTE
 
 
-#### Contemporary natives ####
+#### Contemporary Native ####
 list_nls_contN <- list("Linear"=fit_linear_nls_contN_3, 
                      "Power"=fit_power_nls_contN_3,
                      "Asympt"=fit4_contN3, 
                      "Sigmoidal"=fit5_contN)
 contN_comp <- fun_comp(list_nls_contN)
 contN_comp$Period <- "Contemporary Native"
-##### NOTE: ASYMPTOTE.
+##### NOTE: ASYMPTOTE. // ASYMPTOTE
 
 
-#### Contemporary Natives + Exotics ####
+#### Contemporary Native + Introduced ####
 list_nls_contAll <- list("Linear"=fit_linear_nls_contAll_3,
                          "Power"=fit_power_nls_contAll_3,
                          "Asympt"=fit4_contAll3, 
                          "Sigmoidal"=fit5_contAll)
 contAll_comp <- fun_comp(list_nls_contAll)
-contAll_comp$Period <- "Contemporary Natives + Exotics"
-##### NOTE: ASYMPTOTE.
+contAll_comp$Period <- "Contemporary Native + Introduced"
+##### NOTE: ASYMPTOTE. // ASYMPTOTE
 
 
 TableComp <- as.data.frame(rbind(hnc_comp, hnb_comp, contN_comp, contAll_comp))
@@ -595,7 +618,7 @@ write.csv(TableComp, file="TableModelComparisonsMain.csv", row.names=F)
 
 
 #===============================================================================
-# Data GGplots: ----------------------------------------------------------------
+# Data Ggplots: ----------------------------------------------------------------
 #===============================================================================
 range(hnc3$T0)      # 2 17
 range(hnb3$T0)
@@ -615,15 +638,15 @@ pred_hnc$Period <- "Historical Conservative"
 pred_hnb <- as.data.frame(cbind("T0"=historical_x, predFit(fit4_hnb3, data.frame("T0"=historical_x), interval="confidence")))
 pred_hnb$Period <- "Historical Broad"
 pred_contN <- as.data.frame(cbind("T0"=contemporary_x, predFit(fit4_contN3, data.frame("T0"=contemporary_x), interval="confidence")))
-pred_contN$Period <- "Contemporary Natives"
+pred_contN$Period <- "Contemporary Native"
 pred_contAll <- as.data.frame(cbind("T0"=contemporary_x, predFit(fit4_contAll3, data.frame("T0"=contemporary_x), interval="confidence")))
-pred_contAll$Period <- "Contemporary Natives + Exotics"
+pred_contAll$Period <- "Contemporary Native + Introduced"
 
 pred_redundancy <- as.data.frame(rbind(pred_hnc, pred_hnb, pred_contN, pred_contAll))
 pred_redundancy$Period <- factor(pred_redundancy$Period, levels = c("Historical Conservative",
                                                                     "Historical Broad",
-                                                                    "Contemporary Natives", 
-                                                                    "Contemporary Natives + Exotics"))        
+                                                                    "Contemporary Native", 
+                                                                    "Contemporary Native + Introduced"))        
 
 save(pred_redundancy, file="pred_redundancy.RData")
 
@@ -637,29 +660,29 @@ div3 <- div3[!div3$Period=="ContE",]   # rm Cont E from rawdata
 div3$Period <- recode_factor(div3$Period, 
                             HNC = "Historical Conservative", 
                             HNB = "Historical Broad",
-                            ContN = "Contemporary Natives",
-                            ContAll = "Contemporary Natives + Exotics")
+                            ContN = "Contemporary Native",
+                            ContAll = "Contemporary Native + Introduced")
 div3$Period <- factor(div3$Period, levels = c("Historical Conservative",
                                               "Historical Broad",
-                                              "Contemporary Natives", 
-                                              "Contemporary Natives + Exotics"))
+                                              "Contemporary Native", 
+                                              "Contemporary Native + Introduced"))
 
-div3_subset_main <- droplevels(subset(div3, div3$Period %in% c("Historical Broad", "Contemporary Natives",
-                                                 "Contemporary Natives + Exotics")))
-pred_subset_main <- subset(pred_redundancy, pred_redundancy$Period %in% c("Historical Broad", "Contemporary Natives",
-                                                                          "Contemporary Natives + Exotics"))
-colorBlind4   <- c("#F0E442", "#E69F00", "#009E73","#0072B2")
-colorBlind3   <- c("#E69F00", "#009E73","#0072B2")
+div3_subset_main <- droplevels(subset(div3, div3$Period %in% c("Historical Broad", "Contemporary Native",
+                                                 "Contemporary Native + Introduced")))
+pred_subset_main <- subset(pred_redundancy, pred_redundancy$Period %in% c("Historical Broad", "Contemporary Native",
+                                                                          "Contemporary Native + Introduced"))
+colorBlind4   <- c("#28E2E5", "#61D04F", "#F5C710", "#CD0BBC")
+colorBlind3   <- c("#61D04F", "#F5C710", "#CD0BBC")
 
 
 ## Free fit loess: -------------------------------------------------------------
-#(p1 <- ggplot(div, aes(x=T0, y=F0, color=Period))+
-#  geom_point(aes(color=Period))+
-#  geom_smooth()+
-#  theme_classic()+
-#  scale_color_manual(values=colorBlind4)+
-#  facet_wrap(~Period)) # free fit
-#ggsave(p1, file= paste0(path_plots6, "/S5_F0vsT0FreeFit4.jpg"), width = 8, height = 6) 
+(p1 <- ggplot(div3, aes(x=T0, y=F0, color=Period))+
+  geom_point(aes(color=Period))+
+  geom_smooth()+
+  theme_classic()+
+  scale_color_manual(values=colorBlind4)+
+  facet_wrap(~Period)) # free fit
+ggsave(p1, file= paste0(path_plots6, "/S5_F0vsT0FreeFit4.jpg"), width = 8, height = 6) 
 
 
 
@@ -673,9 +696,9 @@ colorBlind3   <- c("#E69F00", "#009E73","#0072B2")
    geom_ribbon(data = pred_redundancy, 
                aes(x = T0, ymin = lwr, ymax = upr), alpha = 0.1) +
    scale_color_manual(values=colorBlind4, 
-                      breaks=c("Historical Conservative", "Historical Broad", "Contemporary Natives", "Contemporary Natives + Exotics"), 
+                      breaks=c("Historical Conservative", "Historical Broad", "Contemporary Native", "Contemporary Native + Introduced"), 
                       labels=c("Historical conservative (n=48)", "Historical broad (n=60)", 
-                               "Contemporary Natives (n=33)", "Contemporary Natives + Exotics (n=49)"))+ 
+                               "Contemporary Native (n=33)", "Contemporary Native + Introduced (n=49)"))+ 
    theme_classic()+
    facet_wrap(~Period)
 ) 
@@ -708,7 +731,7 @@ ggsave(p2, file= paste0(path_plots6, "/S5_F0vsT0BestModel.jpg"), width = 8, heig
 #       col = c("black", "red", "blue", "green"),
 #       lty = c(1,2,3,4), cex=0.5)
 
-#plot(F0 ~ T0, data=contN3, main="Contemporary Natives")
+#plot(F0 ~ T0, data=contN3, main="Contemporary Native")
 #curve(predict(fit_linear_lm_3[[3]], newdata = data.frame(T0 = x)), col = "black", lty=1, add = TRUE)
 #curve(predict(fit_power_nls_contN_3, newdata = data.frame(T0 = x)), col = "red", lty=2, add = TRUE)
 #x=c(2:9)
@@ -718,7 +741,7 @@ ggsave(p2, file= paste0(path_plots6, "/S5_F0vsT0BestModel.jpg"), width = 8, heig
 #       col = c("black", "red", "blue", "green"),
 #       lty = c(1,2,3,4), cex=0.5)
 
-#plot(F0 ~ T0, data=contAll3, main="Contemporary Natives + Exotics")
+#plot(F0 ~ T0, data=contAll3, main="Contemporary Native + Introduced")
 #curve(predict(fit_linear_lm_3[[4]], newdata = data.frame(T0 = x)), col = "black", lty=1, add = TRUE)
 #curve(predict(fit_power_nls_contAll_3, newdata = data.frame(T0 = x)), col = "red", lty=2, add = TRUE)
 #x=c(2:9)

@@ -273,9 +273,10 @@ cor_sing <- cor(data.frame("L.Dis"=Dis_avxSps$av,
                "G.Dis"=Diig$global_di), method="spearman", use = "complete.obs")
 cor(data.frame(Dis_avxSps$av_norm, Uii$Ui_norm, Diig$global_di_norm), method="spearman", use = "complete.obs") # identical, correct
 
-file_path <- paste0(path_plots6, "/S4_SpearmanCorrelationSingularity.png")
-png(width = 500, height = 500, file=file_path)
-corrplot(cor_sing, method="number", type = "lower", order = "hclust", number.cex = 1.5, tl.cex = 1.5)
+file_path <- paste0(path_plots6, "/S4_SpearmanCorrelationRarity.png")
+png(width = 400, height = 400, file=file_path)
+corrplot(cor_sing, method="number", type = "lower", 
+         order = "hclust", number.cex = 1.5, tl.cex = 1.5, diag = FALSE)
 dev.off()
 
 
